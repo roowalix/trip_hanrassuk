@@ -1,854 +1,427 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>가족 여행 일정 공유 플래너</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS & JS for OpenStreetMap -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts (Noto Sans KR) -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0284c7',
-                            600: '#0369a1',
-                            700: '#075985',
-                        },
-                        warm: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Noto Sans KR', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom scrollbar & Leaflet map styling */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        #map { z-index: 10; min-height: 250px; }
-        .tab-active { color: #0284c7; border-bottom: 2px solid #0284c7; font-weight: 600; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리 가족 제주 여행 🌴</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet CSS & JS (지도) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #map { height: 320px; width: 100%; z-index: 1; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans pb-20 md:pb-6">
+<body class="bg-slate-50 text-slate-800 font-sans pb-12">
 
-    <!-- 1. Top Compact Weather Bar (Clickable to detailed weather site) -->
-    <a href="https://weather.com/ko-KR/weather/today/l/Jeju+City+Jeju+Special+Self+Governing+Province?canonicalCityId=6fa0a0cae01a8ef18fbc8d31efbe8be9a9095bc370438cf15ae62ed22c151fb2" 
-       target="_blank" 
-       rel="noopener noreferrer"
-       class="block bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 text-white hover:brightness-105 transition shadow-sm">
-        <div class="max-w-4xl mx-auto px-4 py-1.5 flex justify-between items-center text-xs">
-            <div class="flex items-center space-x-2">
-                <span class="bg-white/20 px-2 py-0.5 rounded-full font-medium text-[11px]"><i class="fa-solid fa-cloud-sun mr-1"></i>여행지 날씨</span>
-                <span class="font-medium">제주 24°C 맑음 ☀️</span>
-                <span class="hidden sm:inline text-sky-100">(습도 55% | 남서풍 2.4m/s)</span>
-            </div>
-            <div class="flex items-center space-x-1 font-medium text-sky-100 hover:text-white">
-                <span>상세주간날씨 보기</span>
-                <i class="fa-solid fa-chevron-right text-[10px]"></i>
-            </div>
-        </div>
-    </a>
+  <!-- 1. 최상단 날씨 얇은 바 -->
+  <div class="bg-sky-700 text-white text-xs sm:text-sm py-2 px-4 shadow-md sticky top-0 z-50">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <span class="bg-sky-800 text-sky-200 px-2 py-0.5 rounded font-bold text-xs">날씨</span>
+        <span class="font-medium">제주 24°C 맑음 ☀️</span>
+        <span class="hidden sm:inline text-sky-200">| 최고 26° / 최저 19°</span>
+      </div>
+      <a href="https://weather.com/ko-KR/weather/today/l/33.4996,126.5312" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center space-x-1 text-sky-100 font-medium">
+        <span>상세 기상예보 보기</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+      </a>
+    </div>
+  </div>
 
-    <!-- Header / Navigation Bar -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="bg-brand-500 text-white p-2 rounded-xl shadow-md">
-                    <i class="fa-solid fa-plane-departure text-lg"></i>
-                </div>
-                <div>
-                    <h1 id="headerTitle" class="font-bold text-lg leading-none text-slate-800">우리 가족 제주 여행 🌴</h1>
-                    <span id="headerSub" class="text-xs text-slate-500">2025.06.12 - 06.15 (3박 4일)</span>
-                </div>
-            </div>
-            <div class="flex items-center space-x-1.5">
-                <button id="editInfoBtn" onclick="openInfoEditModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1 transition" title="여행 정보 수정">
-                    <i class="fa-solid fa-pen-to-square text-brand-500"></i>
-                    <span class="hidden sm:inline">정보 수정</span>
-                </button>
-                <button id="shareBtn" class="bg-brand-50 hover:bg-brand-100 text-brand-600 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1 transition">
-                    <i class="fa-solid fa-share-nodes"></i>
-                    <span class="hidden sm:inline">공유</span>
-                </button>
-            </div>
-        </div>
+  <div class="max-w-4xl mx-auto px-4 pt-4 space-y-4">
+    <!-- 헤더 & 백업 메뉴 -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2" id="display-title">
+          우리 가족 제주 여행 🌴
+        </h1>
+        <p class="text-xs text-slate-500 mt-1" id="display-dates">2026.06.12 - 06.15 (3박 4일)</p>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="copyBackupData()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+          <i class="fa-solid fa-copy"></i> 백업(텍스트 복사)
+        </button>
+        <button onclick="restoreBackupData()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+          <i class="fa-solid fa-download"></i> 불러오기
+        </button>
+        <button onclick="resetData()" class="text-slate-400 hover:text-red-500 text-xs px-2 py-1.5 transition">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+      </div>
     </header>
 
-    <!-- Notification Banner for Toast Messages -->
-    <div id="toast" class="fixed top-16 right-4 z-50 bg-slate-900 text-white px-4 py-2 rounded-xl shadow-lg transform translate-y-[-100px] opacity-0 transition-all duration-300 text-sm flex items-center space-x-2">
-        <i class="fa-solid fa-circle-check text-emerald-400"></i>
-        <span id="toastMsg">알림 메시지</span>
+    <!-- 2. 오늘의 여행 꿀팁 & 명소 가이드 (접기/펼치기 가능 + 직관적 수정) -->
+    <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-white shadow-md overflow-hidden transition-all">
+      <div class="p-4 flex items-center justify-between cursor-pointer select-none" onclick="toggleCard()">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-lightbulb text-amber-200 text-lg"></i>
+          <h2 class="font-bold text-base sm:text-lg">오늘의 여행 꿀팁 & 명소 가이드</h2>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="event.stopPropagation(); openEditTipsModal();" class="bg-white/20 hover:bg-white/30 text-white text-xs px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1">
+            <i class="fa-solid fa-pen"></i> 꿀팁 수정
+          </button>
+          <i id="toggle-icon" class="fa-solid fa-chevron-up transition-transform duration-300"></i>
+        </div>
+      </div>
+      
+      <div id="card-content" class="px-4 pb-4 space-y-3 border-t border-white/20 pt-3 text-sm">
+        <div class="bg-white/10 rounded-lg p-3">
+          <p class="font-semibold text-amber-100 text-xs mb-1">📍 1일차 대표 여행지</p>
+          <p id="tip-intro">용두암 & 함덕해수욕장 - 에메랄드빛 바다와 멋진 하안도로 라이딩 코스</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+          <div class="bg-white/10 rounded-lg p-2.5">
+            <span class="font-semibold text-amber-200">🍴 추천 먹거리:</span> 
+            <span id="tip-food">함덕 해물라면, 고기국수, 갈치조림</span>
+          </div>
+          <div class="bg-white/10 rounded-lg p-2.5">
+            <span class="font-semibold text-amber-200">🏍️ 즐길거리:</span> 
+            <span id="tip-play">해안도로 스쿠터 라이딩, 카약 체험</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Main Content Container -->
-    <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
-
-        <!-- Data Import / Export Toolbar -->
-        <section class="bg-slate-100 p-2.5 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div class="flex items-center space-x-1 text-slate-600 font-medium">
-                <i class="fa-solid fa-database text-brand-500"></i>
-                <span>데이터 관리 & 공유:</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="exportDataJSON()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 px-2.5 py-1 rounded-lg flex items-center space-x-1 transition shadow-sm">
-                    <i class="fa-solid fa-download text-emerald-600"></i>
-                    <span>JSON 저장</span>
-                </button>
-                <label class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 px-2.5 py-1 rounded-lg flex items-center space-x-1 transition shadow-sm cursor-pointer">
-                    <i class="fa-solid fa-upload text-sky-600"></i>
-                    <span>JSON 불러오기</span>
-                    <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="importDataJSON(event)">
-                </label>
-                <button onclick="resetToDefaultData()" class="bg-white hover:bg-rose-50 border border-slate-300 text-rose-600 px-2 py-1 rounded-lg transition shadow-sm" title="기본 샘플 데이터로 초기화">
-                    <i class="fa-solid fa-rotate-left"></i>
-                </button>
-            </div>
-        </section>
-
-        <!-- 2. Today's Destination Info Card (Collapsible & Editable) -->
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 transition-all">
-            <div class="flex justify-between items-center cursor-pointer select-none" onclick="toggleDestinationCard()">
-                <div class="flex items-center space-x-2">
-                    <span class="bg-amber-100 text-amber-700 p-1.5 rounded-lg text-xs font-bold">
-                        <i class="fa-solid fa-compass"></i>
-                    </span>
-                    <div>
-                        <h2 id="cardTitleDisplay" class="font-bold text-slate-800 text-sm">오늘의 여행 꿀팁 & 명소 가이드</h2>
-                        <p id="cardSubDisplay" class="text-[11px] text-slate-400">제주도의 주요 먹거리와 즐길거리 한눈에 보기</p>
-                    </div>
-                </div>
-                <button class="text-slate-400 hover:text-slate-600 p-1">
-                    <i id="destCardToggleIcon" class="fa-solid fa-chevron-up transition-transform duration-300"></i>
-                </button>
-            </div>
-
-            <!-- Collapsible Body Content -->
-            <div id="destCardBody" class="mt-3 pt-3 border-t border-slate-100 space-y-3">
-                <p id="destIntroText" class="text-xs text-slate-600 leading-relaxed">
-                    🌴 <strong>제주도(Jeju Island)</strong>는 푸른 에메랄드빛 바다와 웅장한 한라산이 만나는 대한민국 대표 휴양지입니다. 일차별로 해안도로 라이딩과 오름 산책을 즐겨보세요!
-                </p>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                    <!-- Food Tips -->
-                    <div class="bg-orange-50/60 border border-orange-100 p-3 rounded-xl">
-                        <h3 class="font-bold text-orange-700 mb-1.5 flex items-center">
-                            <i class="fa-solid fa-utensils mr-1.5"></i>추천 먹거리
-                        </h3>
-                        <ul id="foodListDisplay" class="text-slate-600 space-y-1 list-disc list-inside">
-                            <li><strong>흑돼지 구이:</strong> 멜젓에 찍어 먹는 두툼한 목살</li>
-                            <li><strong>고기국수 & 돔베고기:</strong> 진한 사골 육수 국수</li>
-                            <li><strong>갈치조림/구이:</strong> 통갈치 구이와 칼칼한 조림</li>
-                        </ul>
-                    </div>
-
-                    <!-- Activity Tips -->
-                    <div class="bg-emerald-50/60 border border-emerald-100 p-3 rounded-xl">
-                        <h3 class="font-bold text-emerald-700 mb-1.5 flex items-center">
-                            <i class="fa-solid fa-person-biking mr-1.5"></i>추천 즐길거리 & 라이딩
-                        </h3>
-                        <ul id="activityListDisplay" class="text-slate-600 space-y-1 list-disc list-inside">
-                            <li><strong>신창풍차해안도로:</strong> 일몰 명소 드라이브 & 오토바이 코스</li>
-                            <li><strong>성산일출봉 / 섭지코지:</strong> 해안 절경과 산책로</li>
-                            <li><strong>함덕 / 협재 해수욕장:</strong> 투명한 바다 포토존</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. Fixed Interactive Map Section -->
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-            <div class="flex justify-between items-center mb-3">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-map-location-dot text-brand-500 text-lg"></i>
-                    <h2 class="font-bold text-slate-800">여행 지도 한눈에 보기</h2>
-                </div>
-                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">핀 클릭시 장소 확인</span>
-            </div>
-            <!-- Map Container -->
-            <div id="map" class="w-full h-64 rounded-xl border border-slate-200 overflow-hidden shadow-inner"></div>
-        </section>
-
-        <!-- Navigation Tabs (Schedule vs Expenses) -->
-        <div class="flex border-b border-slate-200 bg-white rounded-t-xl px-2 pt-2">
-            <button id="tabScheduleBtn" class="flex-1 py-3 text-center font-medium text-sm tab-active flex justify-center items-center space-x-2">
-                <i class="fa-solid fa-calendar-days"></i>
-                <span>일정 공유 표</span>
-            </button>
-            <button id="tabExpenseBtn" class="flex-1 py-3 text-center font-medium text-sm text-slate-500 flex justify-center items-center space-x-2">
-                <i class="fa-solid fa-wallet"></i>
-                <span>총 예산 & 정산</span>
-            </button>
-        </div>
-
-        <!-- TAB 1: ITINERARY SCHEDULE SECTION -->
-        <div id="tabSchedule" class="space-y-4">
-            <!-- Day Selector Horizontal Scroll -->
-            <div class="flex space-x-2 overflow-x-auto pb-1 pt-1 scrollbar-none" id="dayButtons">
-                <button onclick="filterDay(1)" class="day-btn active-day px-4 py-2 bg-brand-500 text-white rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm transition">1일차 (6/12)</button>
-                <button onclick="filterDay(2)" class="day-btn px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-xs font-semibold whitespace-nowrap hover:bg-slate-50 transition">2일차 (6/13)</button>
-                <button onclick="filterDay(3)" class="day-btn px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-xs font-semibold whitespace-nowrap hover:bg-slate-50 transition">3일차 (6/14)</button>
-                <button onclick="filterDay(4)" class="day-btn px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-xs font-semibold whitespace-nowrap hover:bg-slate-50 transition">4일차 (6/15)</button>
-            </div>
-
-            <!-- Add New Schedule Item Modal / Form Accordion -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <div class="flex justify-between items-center cursor-pointer" onclick="toggleForm()">
-                    <h3 id="formTitle" class="font-bold text-sm text-slate-700 flex items-center space-x-2">
-                        <i class="fa-solid fa-circle-plus text-brand-500"></i>
-                        <span>새 일정 추가하기</span>
-                    </h3>
-                    <i id="formToggleIcon" class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
-                </div>
-                
-                <form id="scheduleForm" class="mt-3 space-y-3 hidden pt-3 border-t border-slate-100">
-                    <input type="hidden" id="editingItemId" value="">
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label class="text-xs text-slate-500 block mb-1">일차 선택</label>
-                            <select id="itemDay" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                                <option value="1">1일차</option>
-                                <option value="2">2일차</option>
-                                <option value="3">3일차</option>
-                                <option value="4">4일차</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 block mb-1">시작 시간</label>
-                            <input type="time" id="itemStartTime" value="10:00" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" required>
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 block mb-1">종료 시간</label>
-                            <input type="time" id="itemEndTime" value="11:30" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" required>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-500 block mb-1">장소명 / 일정 제목</label>
-                        <input type="text" id="itemTitle" placeholder="예: 신창풍차해안도로 오토바이 라이딩" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs text-slate-500 block mb-1">위도 (Latitude)</label>
-                            <input type="number" step="any" id="itemLat" placeholder="33.5434" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 block mb-1">경도 (Longitude)</label>
-                            <input type="number" step="any" id="itemLng" placeholder="126.6692" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-500 block mb-1">메모 / 준비물</label>
-                        <input type="text" id="itemMemo" placeholder="예: 헬멧 착용, 안전운전" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                    </div>
-                    <div class="flex space-x-2">
-                        <button type="submit" id="submitItemBtn" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-medium py-2 rounded-xl text-xs shadow transition">
-                            일정 등록
-                        </button>
-                        <button type="button" id="cancelEditBtn" onclick="cancelEdit()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-medium transition">
-                            취소
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Timeline List Container -->
-            <div id="timelineList" class="space-y-3">
-                <!-- Timeline items rendered dynamically by JS -->
-            </div>
-        </div>
-
-        <!-- TAB 2: BUDGET & EXPENSES SECTION -->
-        <div id="tabExpense" class="space-y-4 hidden">
-            <!-- Total Budget Card -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs text-slate-500 font-medium">총 지출 예상 / 현재 누적</span>
-                        <h3 id="totalExpensesDisplay" class="text-3xl font-extrabold text-slate-800 mt-1">₩ 0</h3>
-                    </div>
-                    <div class="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl border border-emerald-100 text-center">
-                        <i class="fa-solid fa-coins text-xl"></i>
-                    </div>
-                </div>
-
-                <!-- Expense Progress bar -->
-                <div>
-                    <div class="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>목표 예산: ₩ 1,500,000</span>
-                        <span id="budgetPercent">0% 사용</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                        <div id="budgetBar" class="bg-brand-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Expense Breakdown Badges -->
-                <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center text-xs">
-                    <div class="bg-slate-50 p-2 rounded-xl">
-                        <span class="text-slate-400 block">식비</span>
-                        <span id="catFoodSum" class="font-bold text-slate-700">₩0</span>
-                    </div>
-                    <div class="bg-slate-50 p-2 rounded-xl">
-                        <span class="text-slate-400 block">숙박/교통</span>
-                        <span id="catStaySum" class="font-bold text-slate-700">₩0</span>
-                    </div>
-                    <div class="bg-slate-50 p-2 rounded-xl">
-                        <span class="text-slate-400 block">액티비티/기타</span>
-                        <span id="catEtcSum" class="font-bold text-slate-700">₩0</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add Expense Form -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <h3 class="font-bold text-sm text-slate-700 mb-3 flex items-center space-x-2">
-                    <i class="fa-solid fa-receipt text-emerald-500"></i>
-                    <span>새 지출 항목 입력</span>
-                </h3>
-                <form id="expenseForm" class="space-y-3">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs text-slate-500 block mb-1">카테고리</label>
-                            <select id="expCategory" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                                <option value="식비">식비 🍔</option>
-                                <option value="숙박/교통">숙박/교통 🏨</option>
-                                <option value="액티비티/기타">액티비티/기타 🎟️</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 block mb-1">금액 (원)</label>
-                            <input type="number" id="expAmount" placeholder="30000" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" required>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-500 block mb-1">내역</label>
-                        <input type="text" id="expTitle" placeholder="예: 중문 갈치조림 점심" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" required>
-                    </div>
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-xl text-xs shadow transition">
-                        지출 추가하기
-                    </button>
-                </form>
-            </div>
-
-            <!-- Expense List -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <h3 class="font-bold text-sm text-slate-700 mb-3">지출 상세 내역</h3>
-                <div id="expenseList" class="divide-y divide-slate-100">
-                    <!-- Dynamic rendering -->
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Modal for Editing Trip Info Header & Tips -->
-    <div id="infoEditModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-xl">
-            <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-pen-to-square text-brand-500 mr-2"></i>여행 정보 & 꿀팁 수정</h3>
-                <button onclick="closeInfoEditModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="font-semibold block mb-1">여행 제목</label>
-                    <input type="text" id="editTripTitle" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                </div>
-                <div>
-                    <label class="font-semibold block mb-1">여행 기간 설명</label>
-                    <input type="text" id="editTripSub" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                </div>
-                <div>
-                    <label class="font-semibold block mb-1">여행지 소개글</label>
-                    <textarea id="editTripIntro" rows="2" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
-                </div>
-                <div>
-                    <label class="font-semibold block mb-1">추천 먹거리 (줄바꿈으로 구분)</label>
-                    <textarea id="editFoodList" rows="3" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
-                </div>
-                <div>
-                    <label class="font-semibold block mb-1">추천 즐길거리 (줄바꿈으로 구분)</label>
-                    <textarea id="editActivityList" rows="3" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
-                </div>
-            </div>
-            <div class="flex justify-end space-x-2 border-t pt-3">
-                <button onclick="closeInfoEditModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-medium">취소</button>
-                <button onclick="saveTripInfo()" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-medium shadow">저장하기</button>
-            </div>
-        </div>
+    <!-- 3. 고정 지도 카드 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-2">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-slate-800 flex items-center gap-2 text-sm sm:text-base">
+          <i class="fa-solid fa-map-location-dot text-sky-600"></i> 여행 지도 (일정 클릭 시 해당 위치 이동)
+        </h2>
+        <span class="text-xs text-slate-400">CartoDB Map</span>
+      </div>
+      <div id="map" class="rounded-lg border border-slate-200"></div>
     </div>
 
-    <!-- JavaScript Logic -->
-    <script>
-        // Initial Default Data
-        const DEFAULT_TRIP_INFO = {
-            title: "우리 가족 제주 여행 🌴",
-            sub: "2025.06.12 - 06.15 (3박 4일)",
-            intro: "🌴 Jeju Island는 푸른 에메랄드빛 바다와 웅장한 한라산이 만나는 대한민국 대표 휴양지입니다. 일차별로 해안도로 라이딩과 오름 산책을 즐겨보세요!",
-            foods: ["흑돼지 구이: 멜젓에 찍어 먹는 두툼한 목살", "고기국수 & 돔베고기: 진한 사골 육수 국수", "갈치조림/구이: 통갈치 구이와 칼칼한 조림"],
-            activities: ["신창풍차해안도로: 일몰 명소 드라이브 & 오토바이 코스", "성산일출봉 / 섭지코지: 해안 절경과 산책로", "함덕 / 협재 해수욕장: 투명한 바다 포토존"]
-        };
+    <!-- 4. 일정표 및 예산 탭 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="flex border-b border-slate-200">
+        <button id="tab-schedule-btn" onclick="switchTab('schedule')" class="flex-1 py-3 text-center font-bold text-sm text-sky-600 border-b-2 border-sky-600">
+          🗓️ 일정 공유
+        </button>
+        <button id="tab-budget-btn" onclick="switchTab('budget')" class="flex-1 py-3 text-center font-bold text-sm text-slate-400 hover:text-slate-600">
+          💰 총 예산 & 정산
+        </button>
+      </div>
 
-        const DEFAULT_SCHEDULES = [
-            { id: 1, day: 1, startTime: "10:30", endTime: "11:30", title: "제주공항 도착 & 렌터카/오토바이 인수", lat: 33.5104, lng: 126.4914, memo: "도착 후 5번 게이트 앞 셔틀 탑승" },
-            { id: 2, day: 1, startTime: "12:00", endTime: "13:30", title: "점심: 고기국수 맛집", lat: 33.4996, lng: 126.5312, memo: "대기표 먼저 받기" },
-            { id: 3, day: 1, startTime: "14:30", endTime: "16:30", title: "함덕 해수욕장 산책 & 카페", lat: 33.5434, lng: 126.6692, memo: "바다 배경 가족 사진 촬영" },
-            { id: 4, day: 2, startTime: "10:00", endTime: "12:30", title: "성산일출봉 등산 & 둘러보기", lat: 33.4631, lng: 126.9423, memo: "편한 운동화 착용 필수" },
-            { id: 5, day: 2, startTime: "14:00", endTime: "16:00", title: "섭지코지 라이딩 코스", lat: 33.4244, lng: 126.9312, memo: "해안도로 경치 관람" },
-            { id: 6, day: 3, startTime: "11:00", endTime: "13:00", title: "중문 관광단지 & 주상절리", lat: 33.2378, lng: 126.4253, memo: "전망대 산책" }
-        ];
+      <!-- 일정 탭 컨텐츠 -->
+      <div id="tab-schedule-content" class="p-4 space-y-4">
+        <!-- 일차 선택 -->
+        <div class="flex space-x-2 overflow-x-auto pb-2 no-scrollbar" id="day-buttons">
+          <!-- JS로 일차 버튼 생성 -->
+        </div>
 
-        const DEFAULT_EXPENSES = [
-            { id: 1, category: "숙박/교통", title: "렌터카 4일 대여", amount: 180000 },
-            { id: 2, category: "식비", title: "첫날 점심 고기국수", amount: 42000 },
-            { id: 3, category: "식비", title: "함덕 오션뷰 카페", amount: 28000 },
-            { id: 4, category: "액티비티/기타", title: "성산일출봉 입장료 (4인)", amount: 20000 }
-        ];
+        <!-- 새 일정 추가 버튼 -->
+        <form onsubmit="addSchedule(event)" class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <input type="time" id="sched-start" required class="p-1.5 text-xs rounded border border-slate-300">
+            <input type="time" id="sched-end" required class="p-1.5 text-xs rounded border border-slate-300">
+            <input type="text" id="sched-title" placeholder="장소 / 일정 이름" required class="p-1.5 text-xs rounded border border-slate-300 col-span-2 sm:col-span-2">
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <input type="number" step="any" id="sched-lat" placeholder="위도(Lat) 예: 33.4996" class="p-1.5 text-xs rounded border border-slate-300">
+            <input type="number" step="any" id="sched-lng" placeholder="경도(Lng) 예: 126.5312" class="p-1.5 text-xs rounded border border-slate-300">
+            <input type="text" id="sched-memo" placeholder="메모 (예: 꿀팁, 준비물)" class="p-1.5 text-xs rounded border border-slate-300 col-span-2 sm:col-span-1">
+          </div>
+          <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold py-2 rounded transition">
+            + 일정 추가하기
+          </button>
+        </form>
 
-        // Reactive Application State
-        let tripInfo = JSON.parse(localStorage.getItem('family_trip_info')) || DEFAULT_TRIP_INFO;
-        let scheduleItems = JSON.parse(localStorage.getItem('family_trip_schedules')) || DEFAULT_SCHEDULES;
-        let expenseItems = JSON.parse(localStorage.getItem('family_trip_expenses')) || DEFAULT_EXPENSES;
+        <!-- 일정 목록 -->
+        <div id="schedule-list" class="space-y-2">
+          <!-- JS dynamic -->
+        </div>
+      </div>
 
-        let currentDayFilter = 1;
-        let map, markersGroup;
-        const TARGET_BUDGET = 1500000;
+      <!-- 예산 탭 컨텐츠 -->
+      <div id="tab-budget-content" class="p-4 space-y-4 hidden">
+        <div class="bg-sky-50 p-4 rounded-xl border border-sky-100 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-sky-600 font-bold">현재 총 지출 합계</span>
+            <h3 class="text-2xl font-extrabold text-sky-900" id="total-budget-sum">0원</h3>
+          </div>
+          <i class="fa-solid fa-calculator text-3xl text-sky-300"></i>
+        </div>
 
-        // Initialize App
-        window.onload = function() {
-            initMap();
-            renderTripInfo();
-            renderSchedule();
-            renderExpenses();
-            setupEventListeners();
-        };
+        <form onsubmit="addBudget(event)" class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-2">
+          <input type="text" id="budget-title" placeholder="항목명 (예: 렌트카)" required class="flex-1 p-1.5 text-xs rounded border border-slate-300 min-w-[120px]">
+          <input type="number" id="budget-amount" placeholder="금액(원)" required class="w-28 p-1.5 text-xs rounded border border-slate-300">
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition">
+            + 지출 추가
+          </button>
+        </form>
 
-        // Save state to LocalStorage
-        function saveDataToStorage() {
-            localStorage.setItem('family_trip_info', JSON.stringify(tripInfo));
-            localStorage.setItem('family_trip_schedules', JSON.stringify(scheduleItems));
-            localStorage.setItem('family_trip_expenses', JSON.stringify(expenseItems));
+        <div id="budget-list" class="space-y-2">
+          <!-- JS dynamic -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 꿀팁 수정 모달 -->
+  <div id="tips-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl max-w-md w-full p-5 space-y-4 shadow-xl">
+      <h3 class="font-bold text-lg text-slate-800">오늘의 꿀팁 & 명소 수정</h3>
+      <div class="space-y-3 text-xs sm:text-sm">
+        <div>
+          <label class="block font-medium text-slate-600 mb-1">대표 여행지 소개</label>
+          <input type="text" id="edit-tip-intro" class="w-full p-2 border border-slate-300 rounded">
+        </div>
+        <div>
+          <label class="block font-medium text-slate-600 mb-1">추천 먹거리</label>
+          <input type="text" id="edit-tip-food" class="w-full p-2 border border-slate-300 rounded">
+        </div>
+        <div>
+          <label class="block font-medium text-slate-600 mb-1">즐길거리 / 가볼 만한 곳</label>
+          <input type="text" id="edit-tip-play" class="w-full p-2 border border-slate-300 rounded">
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeEditTipsModal()" class="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded">취소</button>
+        <button onclick="saveEditTips()" class="px-3 py-1.5 text-xs bg-amber-500 text-white font-bold rounded hover:bg-amber-600">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 기본 초기 데이터
+    const defaultData = {
+      title: "우리 가족 제주 여행 🌴",
+      dates: "2026.06.12 - 06.15 (3박 4일)",
+      currentDay: 1,
+      tips: {
+        1: { intro: "용두암 & 함덕해수욕장 - 에메랄드빛 바다와 멋진 하안도로 라이딩 코스", food: "함덕 해물라면, 고기국수", play: "해안도로 스쿠터 라이딩, 카약" },
+        2: { intro: "성산일출봉 & 섭지코지 - 제주 동쪽의 웅장한 자연 경관", food: "갈치조림, 흑돼지 구이", play: "성산 일출 감상, 해안 산책" },
+        3: { intro: "서귀포 올레시장 & 천지연폭포 - 먹거리 폭발 시장 투어", food: "마늘치킨, 오메기떡, 귤하르방빵", play: "야시장 탐방, 폭포 산책" },
+        4: { intro: "협재해수욕장 & 한림공원 - 맑은 바다 보며 여행 마무리", food: "보목 해녀물회, 카페 라떼", play: "기념품 쇼핑, 공원 산책" }
+      },
+      schedules: [
+        { day: 1, start: "10:00", end: "11:30", title: "제주공항 도착 & 렌트카 수령", lat: 33.5066, lng: 126.4931, memo: "도착 후 5번 게이트로 이동" },
+        { day: 1, start: "12:00", end: "13:00", title: "점심 식사 (고기국수)", lat: 33.5080, lng: 126.5270, memo: "자매국수 추천" },
+        { day: 1, start: "14:00", end: "16:30", title: "함덕해수욕장 라이딩 & 카페", lat: 33.5434, lng: 126.6692, memo: "해안도로 경치 최고" },
+        { day: 2, start: "09:30", end: "12:00", title: "성산일출봉 등반", lat: 33.4581, lng: 126.9426, memo: "편한 신발 착용" }
+      ],
+      budgets: [
+        { id: 1, title: "항공권 (가족 합계)", amount: 450000 },
+        { id: 2, title: "숙소 (3박)", amount: 520000 },
+        { id: 3, title: "렌트카 & 기름값", amount: 180000 }
+      ]
+    };
+
+    let tripData = JSON.parse(localStorage.getItem('family_trip_data')) || defaultData;
+    let map, markers = [];
+
+    // 지도 초기화
+    function initMap() {
+      map = L.map('map').setView([33.4996, 126.5312], 10);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap, © CARTO'
+      }).addTo(map);
+      updateMarkers();
+    }
+
+    function updateMarkers() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      const dayScheds = tripData.schedules.filter(s => s.day === tripData.currentDay);
+      
+      const points = [];
+      dayScheds.forEach(s => {
+        if (s.lat && s.lng) {
+          const marker = L.marker([s.lat, s.lng]).addTo(map)
+            .bindPopup(`<b>${s.start}~${s.end}</b><br>${s.title}`);
+          markers.push(marker);
+          points.push([s.lat, s.lng]);
         }
+      });
 
-        // Render Trip Header & Info Guide
-        function renderTripInfo() {
-            document.getElementById('headerTitle').innerText = tripInfo.title;
-            document.getElementById('headerSub').innerText = tripInfo.sub;
-            document.getElementById('destIntroText').innerHTML = tripInfo.intro;
+      if (points.length > 0) {
+        map.fitBounds(points, { padding: [30, 30] });
+      }
+    }
 
-            document.getElementById('foodListDisplay').innerHTML = tripInfo.foods.map(item => `<li>${item}</li>`).join('');
-            document.getElementById('activityListDisplay').innerHTML = tripInfo.activities.map(item => `<li>${item}</li>`).join('');
+    function renderUI() {
+      // 일차 버튼
+      const dayBtns = document.getElementById('day-buttons');
+      dayBtns.innerHTML = '';
+      for (let i = 1; i <= 4; i++) {
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition ${tripData.currentDay === i ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
+        btn.innerText = `${i}일차`;
+        btn.onclick = () => { tripData.currentDay = i; saveAndRender(); };
+        dayBtns.appendChild(btn);
+      }
+
+      // 꿀팁 업데이트
+      const currentTip = tripData.tips[tripData.currentDay] || { intro: '-', food: '-', play: '-' };
+      document.getElementById('tip-intro').innerText = currentTip.intro;
+      document.getElementById('tip-food').innerText = currentTip.food;
+      document.getElementById('tip-play').innerText = currentTip.play;
+
+      // 일정 목록
+      const list = document.getElementById('schedule-list');
+      list.innerHTML = '';
+      const dayScheds = tripData.schedules.filter(s => s.day === tripData.currentDay);
+      
+      if (dayScheds.length === 0) {
+        list.innerHTML = '<p class="text-center text-xs text-slate-400 py-4">등록된 일정이 없습니다. 위에 새로 추가해 보세요!</p>';
+      } else {
+        dayScheds.forEach((s, idx) => {
+          const item = document.createElement('div');
+          item.className = 'bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center justify-between text-xs hover:border-sky-300 transition cursor-pointer';
+          item.onclick = () => { if(s.lat && s.lng) map.setView([s.lat, s.lng], 13); };
+          item.innerHTML = `
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="bg-sky-100 text-sky-700 font-bold px-1.5 py-0.5 rounded text-[10px]">${s.start} ~ ${s.end}</span>
+                <span class="font-bold text-slate-800">${s.title}</span>
+              </div>
+              ${s.memo ? `<p class="text-slate-500 text-[11px]"><i class="fa-solid fa-sticky-note text-amber-500"></i> ${s.memo}</p>` : ''}
+            </div>
+            <button onclick="event.stopPropagation(); deleteSchedule(${idx})" class="text-slate-400 hover:text-red-500 p-1">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          `;
+          list.appendChild(item);
+        });
+      }
+
+      // 예산 목록 및 합계
+      const budgetList = document.getElementById('budget-list');
+      budgetList.innerHTML = '';
+      let sum = 0;
+      tripData.budgets.forEach((b, idx) => {
+        sum += Number(b.amount);
+        const item = document.createElement('div');
+        item.className = 'flex justify-between items-center p-2.5 bg-slate-50 rounded-lg text-xs border border-slate-100';
+        item.innerHTML = `
+          <span class="font-medium text-slate-700">${b.title}</span>
+          <div class="flex items-center space-x-3">
+            <span class="font-bold text-slate-900">${Number(b.amount).toLocaleString()}원</span>
+            <button onclick="deleteBudget(${idx})" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+        budgetList.appendChild(item);
+      });
+      document.getElementById('total-budget-sum').innerText = sum.toLocaleString() + '원';
+
+      if (map) updateMarkers();
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('family_trip_data', JSON.stringify(tripData));
+      renderUI();
+    }
+
+    function addSchedule(e) {
+      e.preventDefault();
+      const start = document.getElementById('sched-start').value;
+      const end = document.getElementById('sched-end').value;
+      const title = document.getElementById('sched-title').value;
+      const lat = parseFloat(document.getElementById('sched-lat').value) || null;
+      const lng = parseFloat(document.getElementById('sched-lng').value) || null;
+      const memo = document.getElementById('sched-memo').value;
+
+      tripData.schedules.push({ day: tripData.currentDay, start, end, title, lat, lng, memo });
+      saveAndRender();
+      e.target.reset();
+    }
+
+    function deleteSchedule(idx) {
+      const dayScheds = tripData.schedules.filter(s => s.day === tripData.currentDay);
+      const target = dayScheds[idx];
+      tripData.schedules = tripData.schedules.filter(s => s !== target);
+      saveAndRender();
+    }
+
+    function addBudget(e) {
+      e.preventDefault();
+      const title = document.getElementById('budget-title').value;
+      const amount = parseInt(document.getElementById('budget-amount').value);
+      tripData.budgets.push({ id: Date.now(), title, amount });
+      saveAndRender();
+      e.target.reset();
+    }
+
+    function deleteBudget(idx) {
+      tripData.budgets.splice(idx, 1);
+      saveAndRender();
+    }
+
+    function toggleCard() {
+      const content = document.getElementById('card-content');
+      const icon = document.getElementById('toggle-icon');
+      content.classList.toggle('hidden');
+      icon.classList.toggle('rotate-180');
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-schedule-content').classList.toggle('hidden', tab !== 'schedule');
+      document.getElementById('tab-budget-content').classList.toggle('hidden', tab !== 'budget');
+      document.getElementById('tab-schedule-btn').className = `flex-1 py-3 text-center font-bold text-sm ${tab === 'schedule' ? 'text-sky-600 border-b-2 border-sky-600' : 'text-slate-400 hover:text-slate-600'}`;
+      document.getElementById('tab-budget-btn').className = `flex-1 py-3 text-center font-bold text-sm ${tab === 'budget' ? 'text-sky-600 border-b-2 border-sky-600' : 'text-slate-400 hover:text-slate-600'}`;
+    }
+
+    function openEditTipsModal() {
+      const current = tripData.tips[tripData.currentDay] || {};
+      document.getElementById('edit-tip-intro').value = current.intro || '';
+      document.getElementById('edit-tip-food').value = current.food || '';
+      document.getElementById('edit-tip-play').value = current.play || '';
+      document.getElementById('tips-modal').classList.remove('hidden');
+    }
+
+    function closeEditTipsModal() {
+      document.getElementById('tips-modal').classList.add('hidden');
+    }
+
+    function saveEditTips() {
+      tripData.tips[tripData.currentDay] = {
+        intro: document.getElementById('edit-tip-intro').value,
+        food: document.getElementById('edit-tip-food').value,
+        play: document.getElementById('edit-tip-play').value
+      };
+      saveAndRender();
+      closeEditTipsModal();
+    }
+
+    function copyBackupData() {
+      navigator.clipboard.writeText(JSON.stringify(tripData));
+      alert('백업 데이터가 클립보드에 복사되었습니다! 메모장이나 카톡에 붙여넣어 보관하세요.');
+    }
+
+    function restoreBackupData() {
+      const input = prompt('복사해 둔 백업 텍스트를 여기에 붙여넣어 주세요:');
+      if (input) {
+        try {
+          tripData = JSON.parse(input);
+          saveAndRender();
+          alert('데이터가 성공적으로 복원되었습니다!');
+        } catch (e) {
+          alert('올바르지 않은 백업 데이터 형식입니다.');
         }
+      }
+    }
 
-        // 1. Initialize Map
-        function initMap() {
-            map = L.map('map').setView([33.5104, 126.4914], 10);
+    function resetData() {
+      if (confirm('초기 샘플 데이터로 되돌리시겠습니까?')) {
+        tripData = JSON.parse(JSON.stringify(defaultData));
+        saveAndRender();
+      }
+    }
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                maxZoom: 19,
-                subdomains: 'abcd',
-                attribution: '&copy; OpenStreetMap &copy; CARTO'
-            }).addTo(map);
-
-            markersGroup = L.layerGroup().addTo(map);
-            updateMapMarkers();
-        }
-
-        function updateMapMarkers() {
-            if (!map || !markersGroup) return;
-            markersGroup.clearLayers();
-
-            const currentDayItems = scheduleItems.filter(item => item.day === currentDayFilter);
-            const bounds = [];
-
-            currentDayItems.forEach((item, idx) => {
-                if (item.lat && item.lng) {
-                    const timeRangeStr = item.startTime && item.endTime ? `${item.startTime} ~ ${item.endTime}` : (item.time || '');
-                    const marker = L.marker([item.lat, item.lng])
-                        .bindPopup(`<b>${idx + 1}. ${item.title}</b><br><span style="font-size:11px; color:#666;">${timeRangeStr} | ${item.memo}</span>`);
-                    markersGroup.addLayer(marker);
-                    bounds.push([item.lat, item.lng]);
-                }
-            });
-
-            if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-            }
-        }
-
-        function focusLocation(lat, lng, title) {
-            if (lat && lng) {
-                map.setView([lat, lng], 14, { animate: true });
-                showToast(`지도가 '${title}' 위치로 이동했습니다.`);
-            } else {
-                showToast("해당 장소의 위치 정보가 없습니다.");
-            }
-        }
-
-        function toggleDestinationCard() {
-            const body = document.getElementById('destCardBody');
-            const icon = document.getElementById('destCardToggleIcon');
-            body.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
-        }
-
-        // 2. Render Schedule List with Edit/Delete Buttons
-        function renderSchedule() {
-            const listEl = document.getElementById('timelineList');
-            const filtered = scheduleItems.filter(item => item.day === currentDayFilter);
-
-            if (filtered.length === 0) {
-                listEl.innerHTML = `
-                    <div class="text-center py-8 bg-white rounded-2xl border border-slate-200">
-                        <i class="fa-regular fa-calendar-xmark text-3xl text-slate-300 mb-2"></i>
-                        <p class="text-xs text-slate-500">등록된 일정이 없습니다. 새 일정을 추가해보세요!</p>
-                    </div>`;
-                return;
-            }
-
-            filtered.sort((a, b) => (a.startTime || a.time || "").localeCompare(b.startTime || b.time || ""));
-
-            listEl.innerHTML = filtered.map((item, index) => {
-                const timeDisplay = (item.startTime && item.endTime) 
-                    ? `${item.startTime} ~ ${item.endTime}` 
-                    : (item.time || "시간 미정");
-
-                return `
-                <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-start justify-between relative group hover:border-brand-500 transition">
-                    <div class="flex items-start space-x-3">
-                        <div class="bg-brand-50 text-brand-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                            ${index + 1}
-                        </div>
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md">
-                                    <i class="fa-regular fa-clock mr-1"></i>${timeDisplay}
-                                </span>
-                                <h4 class="font-bold text-slate-800 text-sm">${item.title}</h4>
-                            </div>
-                            ${item.memo ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-regular fa-note-sticky text-slate-400 mr-1"></i>${item.memo}</p>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-1">
-                        ${item.lat && item.lng ? `
-                            <button onclick="focusLocation(${item.lat}, ${item.lng}, '${item.title}')" class="text-brand-500 hover:bg-brand-50 p-2 rounded-lg text-xs transition" title="지도 위치보기">
-                                <i class="fa-solid fa-location-crosshairs text-base"></i>
-                            </button>
-                        ` : ''}
-                        <button onclick="editScheduleItem(${item.id})" class="text-slate-400 hover:text-brand-600 p-2 rounded-lg text-xs transition" title="수정">
-                            <i class="fa-solid fa-pen-to-square"></i>
-                        </button>
-                        <button onclick="deleteSchedule(${item.id})" class="text-slate-300 hover:text-rose-500 p-2 rounded-lg text-xs transition" title="삭제">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                </div>
-            `}).join('');
-
-            updateMapMarkers();
-        }
-
-        // Edit Schedule Item
-        function editScheduleItem(id) {
-            const item = scheduleItems.find(i => i.id === id);
-            if (!item) return;
-
-            document.getElementById('editingItemId').value = item.id;
-            document.getElementById('itemDay').value = item.day;
-            document.getElementById('itemStartTime').value = item.startTime || "10:00";
-            document.getElementById('itemEndTime').value = item.endTime || "11:30";
-            document.getElementById('itemTitle').value = item.title;
-            document.getElementById('itemLat').value = item.lat || "";
-            document.getElementById('itemLng').value = item.lng || "";
-            document.getElementById('itemMemo').value = item.memo || "";
-
-            document.getElementById('submitItemBtn').innerText = "수정 완료";
-            document.getElementById('cancelEditBtn').classList.remove('hidden');
-            
-            const form = document.getElementById('scheduleForm');
-            if (form.classList.contains('hidden')) toggleForm();
-            form.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function cancelEdit() {
-            document.getElementById('scheduleForm').reset();
-            document.getElementById('editingItemId').value = "";
-            document.getElementById('submitItemBtn').innerText = "일정 등록";
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-        }
-
-        function filterDay(day) {
-            currentDayFilter = day;
-            document.querySelectorAll('.day-btn').forEach((btn, idx) => {
-                btn.className = (idx + 1 === day)
-                    ? "day-btn active-day px-4 py-2 bg-brand-500 text-white rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm transition"
-                    : "day-btn px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-xs font-semibold whitespace-nowrap hover:bg-slate-50 transition";
-            });
-            renderSchedule();
-        }
-
-        function deleteSchedule(id) {
-            scheduleItems = scheduleItems.filter(item => item.id !== id);
-            saveDataToStorage();
-            renderSchedule();
-            showToast("일정이 삭제되었습니다.");
-        }
-
-        // 3. Render Expenses
-        function renderExpenses() {
-            const listEl = document.getElementById('expenseList');
-            const totalDisplay = document.getElementById('totalExpensesDisplay');
-            const bar = document.getElementById('budgetBar');
-            const percentDisplay = document.getElementById('budgetPercent');
-
-            let catFood = 0, catStay = 0, catEtc = 0, total = 0;
-
-            expenseItems.forEach(item => {
-                const amt = Number(item.amount);
-                total += amt;
-                if (item.category === "식비") catFood += amt;
-                else if (item.category === "숙박/교통") catStay += amt;
-                else catEtc += amt;
-            });
-
-            totalDisplay.innerText = `₩ ${total.toLocaleString()}`;
-            document.getElementById('catFoodSum').innerText = `₩ ${catFood.toLocaleString()}`;
-            document.getElementById('catStaySum').innerText = `₩ ${catStay.toLocaleString()}`;
-            document.getElementById('catEtcSum').innerText = `₩ ${catEtc.toLocaleString()}`;
-
-            const percent = Math.min(Math.round((total / TARGET_BUDGET) * 100), 100);
-            bar.style.width = `${percent}%`;
-            percentDisplay.innerText = `${percent}% 사용됨`;
-
-            if (expenseItems.length === 0) {
-                listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">입력된 지출 내역이 없습니다.</p>`;
-                return;
-            }
-
-            listEl.innerHTML = expenseItems.map(item => `
-                <div class="py-2.5 flex justify-between items-center text-xs">
-                    <div>
-                        <span class="font-medium text-slate-800">${item.title}</span>
-                        <span class="text-slate-400 text-[10px] ml-1 px-1.5 py-0.5 bg-slate-100 rounded">${item.category}</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <span class="font-bold text-slate-700">₩ ${Number(item.amount).toLocaleString()}</span>
-                        <button onclick="deleteExpense(${item.id})" class="text-slate-300 hover:text-rose-500 transition">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function deleteExpense(id) {
-            expenseItems = expenseItems.filter(item => item.id !== id);
-            saveDataToStorage();
-            renderExpenses();
-            showToast("지출 내역이 삭제되었습니다.");
-        }
-
-        // 4. Modal for Header & Guide Info Editing
-        function openInfoEditModal() {
-            document.getElementById('editTripTitle').value = tripInfo.title;
-            document.getElementById('editTripSub').value = tripInfo.sub;
-            document.getElementById('editTripIntro').value = tripInfo.intro;
-            document.getElementById('editFoodList').value = tripInfo.foods.join('\n');
-            document.getElementById('editActivityList').value = tripInfo.activities.join('\n');
-            document.getElementById('infoEditModal').classList.remove('hidden');
-        }
-
-        function closeInfoEditModal() {
-            document.getElementById('infoEditModal').classList.add('hidden');
-        }
-
-        function saveTripInfo() {
-            tripInfo.title = document.getElementById('editTripTitle').value;
-            tripInfo.sub = document.getElementById('editTripSub').value;
-            tripInfo.intro = document.getElementById('editTripIntro').value;
-            tripInfo.foods = document.getElementById('editFoodList').value.split('\n').filter(s => s.trim() !== '');
-            tripInfo.activities = document.getElementById('editActivityList').value.split('\n').filter(s => s.trim() !== '');
-
-            saveDataToStorage();
-            renderTripInfo();
-            closeInfoEditModal();
-            showToast("여행 정보가 새로 업데이트되었습니다.");
-        }
-
-        // 5. JSON Backup / Restore Logic
-        function exportDataJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-                info: tripInfo,
-                schedules: scheduleItems,
-                expenses: expenseItems
-            }, null, 2));
-
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `여행일정_백업_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-
-            showToast("전체 데이터가 JSON 파일로 다운로드되었습니다.");
-        }
-
-        function importDataJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.info && parsed.schedules && parsed.expenses) {
-                        tripInfo = parsed.info;
-                        scheduleItems = parsed.schedules;
-                        expenseItems = parsed.expenses;
-                        saveDataToStorage();
-
-                        renderTripInfo();
-                        renderSchedule();
-                        renderExpenses();
-                        showToast("JSON 백업 데이터가 정상 복원되었습니다!");
-                    } else {
-                        showToast("올바른 포맷의 백업 파일이 아닙니다.");
-                    }
-                } catch (err) {
-                    showToast("파일 읽기 오류: JSON 형식을 확인하세요.");
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function resetToDefaultData() {
-            if (confirm("모든 데이터를 기본 샘플 데이터로 초기화하시겠습니까?")) {
-                tripInfo = DEFAULT_TRIP_INFO;
-                scheduleItems = DEFAULT_SCHEDULES;
-                expenseItems = DEFAULT_EXPENSES;
-                saveDataToStorage();
-                renderTripInfo();
-                renderSchedule();
-                renderExpenses();
-                showToast("기본 데이터로 초기화되었습니다.");
-            }
-        }
-
-        // Event Listeners Setup
-        function setupEventListeners() {
-            document.getElementById('scheduleForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const editingId = document.getElementById('editingItemId').value;
-                const day = Number(document.getElementById('itemDay').value);
-                const startTime = document.getElementById('itemStartTime').value;
-                const endTime = document.getElementById('itemEndTime').value;
-                const title = document.getElementById('itemTitle').value;
-                const lat = parseFloat(document.getElementById('itemLat').value) || null;
-                const lng = parseFloat(document.getElementById('itemLng').value) || null;
-                const memo = document.getElementById('itemMemo').value;
-
-                if (editingId) {
-                    const index = scheduleItems.findIndex(i => i.id == editingId);
-                    if (index !== -1) {
-                        scheduleItems[index] = { id: Number(editingId), day, startTime, endTime, title, lat, lng, memo };
-                        showToast("일정이 수정되었습니다.");
-                    }
-                } else {
-                    scheduleItems.push({ id: Date.now(), day, startTime, endTime, title, lat, lng, memo });
-                    showToast("새 일정이 추가되었습니다!");
-                }
-
-                saveDataToStorage();
-                renderSchedule();
-                cancelEdit();
-                toggleForm();
-            });
-
-            document.getElementById('expenseForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const category = document.getElementById('expCategory').value;
-                const title = document.getElementById('expTitle').value;
-                const amount = Number(document.getElementById('expAmount').value);
-
-                if (!title || !amount) return;
-
-                expenseItems.push({ id: Date.now(), category, title, amount });
-                saveDataToStorage();
-                renderExpenses();
-                this.reset();
-                showToast("지출이 등록되었습니다.");
-            });
-
-            document.getElementById('tabScheduleBtn').addEventListener('click', () => switchTab('schedule'));
-            document.getElementById('tabExpenseBtn').addEventListener('click', () => switchTab('expense'));
-
-            document.getElementById('shareBtn').addEventListener('click', function() {
-                const dummy = document.createElement("input");
-                document.body.appendChild(dummy);
-                dummy.value = window.location.href;
-                dummy.select();
-                document.execCommand("copy");
-                document.body.removeChild(dummy);
-                showToast("공유 링크가 클립보드에 복사되었습니다! 🔗");
-            });
-        }
-
-        function switchTab(tab) {
-            const scheduleSection = document.getElementById('tabSchedule');
-            const expenseSection = document.getElementById('tabExpense');
-            const schedBtn = document.getElementById('tabScheduleBtn');
-            const expBtn = document.getElementById('tabExpenseBtn');
-
-            if (tab === 'schedule') {
-                scheduleSection.classList.remove('hidden');
-                expenseSection.classList.add('hidden');
-                schedBtn.className = "flex-1 py-3 text-center font-medium text-sm tab-active flex justify-center items-center space-x-2";
-                expBtn.className = "flex-1 py-3 text-center font-medium text-sm text-slate-500 flex justify-center items-center space-x-2";
-                setTimeout(() => { map.invalidateSize(); }, 200);
-            } else {
-                scheduleSection.classList.add('hidden');
-                expenseSection.classList.remove('hidden');
-                expBtn.className = "flex-1 py-3 text-center font-medium text-sm tab-active flex justify-center items-center space-x-2";
-                schedBtn.className = "flex-1 py-3 text-center font-medium text-sm text-slate-500 flex justify-center items-center space-x-2";
-            }
-        }
-
-        function toggleForm() {
-            const form = document.getElementById('scheduleForm');
-            const icon = document.getElementById('formToggleIcon');
-            form.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
-            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-[-100px]', 'opacity-0');
-            }, 3000);
-        }
-    </script>
+    window.onload = () => {
+      initMap();
+      renderUI();
+    };
+  </script>
 </body>
 </html>
