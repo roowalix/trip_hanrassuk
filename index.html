@@ -56,7 +56,7 @@
             </div>
             <button onclick="shareLink()" class="bg-sky-50 hover:bg-sky-100 text-sky-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center space-x-1 transition shrink-0">
                 <i class="fa-solid fa-share-nodes"></i>
-                <span>공유</span>
+                <span class="hidden sm:inline">공유</span>
             </button>
         </div>
     </header>
@@ -71,7 +71,7 @@
             </div>
         </section>
 
-        <!-- 3. Daily Destination Info (Customizable text + Icons 🍴 / 🎠) -->
+        <!-- 3. Daily Destination Info (Editable directly on page via Modal) -->
         <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
             <div class="flex justify-between items-center border-b pb-2.5 border-slate-100">
                 <div class="flex items-center space-x-2">
@@ -82,6 +82,11 @@
                         오늘의 여행지 : <span id="destCityName" class="text-sky-600">나고야 / 스와호</span>
                     </h2>
                 </div>
+                <!-- EDIT BUTTON FOR CURRENT DAY INFO -->
+                <button onclick="openEditDayModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition">
+                    <i class="fa-solid fa-pen-to-square text-sky-600"></i>
+                    <span>이 날 정보 수정</span>
+                </button>
             </div>
 
             <!-- Destination Brief Summary -->
@@ -95,7 +100,7 @@
                     <span class="text-xl leading-none">🍴</span>
                     <div>
                         <h3 class="font-bold text-amber-900 mb-1">먹거리</h3>
-                        <p id="destFoodText" class="text-slate-700">나고야 테바사키(닭날개 튀김), 스와호 지역 메밀소바 및 온천 요리</p>
+                        <p id="destFoodText" class="text-slate-700">나고야 테바사키(닭날개), 메밀소바</p>
                     </div>
                 </div>
 
@@ -103,13 +108,13 @@
                     <span class="text-xl leading-none">🎠</span>
                     <div>
                         <h3 class="font-bold text-purple-900 mb-1">즐길거리</h3>
-                        <p id="destActivityText" class="text-slate-700">스와호 호수 둘레길 라이딩, 야경 전망대, 온천 휴식</p>
+                        <p id="destActivityText" class="text-slate-700">스와호 둘레길 드라이브, 야경 관람</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3-2. Daily Map View (Separate Map Link per Day) -->
+        <!-- 3-2. Daily Map View (Separate Map Link per Day, Edit Link on Modal) -->
         <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
             <div class="flex justify-between items-center mb-3">
                 <div class="flex items-center space-x-2">
@@ -291,6 +296,53 @@
         </div>
     </main>
 
+    <!-- MODAL: EDIT DAY INFO (Direct Editing for Users without Coding) -->
+    <div id="editDayModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-slate-800 text-sm">
+                    <i class="fa-solid fa-sliders text-sky-600 mr-1.5"></i>
+                    <span id="modalDayTitle">1일차 정보 직접 수정하기</span>
+                </h3>
+                <button onclick="closeEditDayModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">오늘의 여행지 (도시 이름)</label>
+                    <input type="text" id="editModalCity" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">여행지 간단 소개글</label>
+                    <textarea id="editModalSummary" rows="2" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="font-bold text-amber-900 block mb-1">🍴 추천 먹거리</label>
+                    <input type="text" id="editModalFood" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-purple-900 block mb-1">🎠 추천 즐길거리</label>
+                    <input type="text" id="editModalActivity" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">구글 지도 퍼가기 (Embed iframe URL)</label>
+                    <input type="text" id="editModalMapUrl" placeholder="https://www.google.com/maps/embed?..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">구글 지도 외부 앱 링크 (전체 지도시 보기)</label>
+                    <input type="text" id="editModalExternalMap" placeholder="https://maps.google.com/..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 border-t pt-3">
+                <button onclick="closeEditDayModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold">취소</button>
+                <button onclick="saveEditDayModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow">저장하기</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="fixed bottom-6 right-4 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 text-xs flex items-center space-x-2">
         <i class="fa-solid fa-circle-check text-emerald-400"></i>
@@ -301,14 +353,14 @@
     <script>
         const EXCHANGE_RATE = 8.50; // 1 JPY = 8.50 KRW
 
-        // Daily Configurations & Data
-        const daysConfig = [
+        // Default Daily Information Data
+        const defaultDaysConfig = [
             { dayIndex: 1, dateLabel: "11/11 (수)", city: "나고야 / 스와호", summary: "나고야 도착 후 스와호로 이동하는 라이딩 & 이동 코스입니다.", food: "나고야 테바사키(닭날개), 메밀소바", activity: "스와호 둘레길 드라이브, 야경 관람", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d104532.55325852433!2d138.02641955!3d36.0474668!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x601d830bf7db6a4f%3A0xd64d96fa3efcb0cf!2sLake%20Suwa!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Lake+Suwa" },
             { dayIndex: 2, dateLabel: "11/12 (목)", city: "시즈오카 / 후지산 주변", summary: "후지산 전경을 조망하며 달리는 와인딩 라이딩 코스입니다.", food: "시즈오카 오뎅, 녹차 디저트, 장어덮밥", activity: "후지산 패러글라이딩/전망대, 후지 5호 탐방", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d208537.11475730164!2d138.60155095!3d35.3606255!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6019629a42fdc899%3A0xa72314271ac0d43a!2sMount%20Fuji!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Mount+Fuji" },
             { dayIndex: 3, dateLabel: "11/13 (금)", city: "기후 / 타카야마", summary: "전통 가옥과 역사적 거리 풍경을 즐길 수 있는 미식 탐방입니다.", food: "히다규 고기 구이, 타카야마 라멘", activity: "산마치 전통거리 산책, 온천 체험", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d102914.89679632422!2d137.2029731!3d36.1408107!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6002bbba06a6c0c5%3A0x6a0c5c4f24795b5a!2sTakayama%20Gifu!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Takayama+Gifu" },
             { dayIndex: 4, dateLabel: "11/14 (토)", city: "카나자와", summary: "동해 해안도로 라이딩과 현대 미술관 탐방 코스입니다.", food: "해산물 덮밥(카이센동), 금박 아이스크림", activity: "켄로쿠엔 정원, 21세기 미술관", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d102497.52554707077!2d136.6023348!3d36.5613251!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x5ff8373bfa993e5d%3A0x82c9f552f9547d6a!2sKanazawa%20Ishikawa!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Kanazawa" },
             { dayIndex: 5, dateLabel: "11/15 (일)", city: "교토", summary: "역사와 문화가 숨쉬는 천년 고도 교토 시내 투어입니다.", food: "교토 정식(가이세키), 우지 말차", activity: "청수사(키요미즈데라), 아라시야마 대나무숲", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d209149.23120150935!2d135.63205795!3d35.0210712!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6001a082413172e9%3A0x8085b8fae73d4c38!2sKyoto!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Kyoto" },
-            { dayIndex: 6, dateLabel: "11/16 (월)", city: "고베", summary: "항구 도시 고베의 야경과 항만 해안도로 코스입니다.", food: "고베 규 스토키, 아카시야키", activity: "메리켄 파크, 롯코산 야경 전망대", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d209867.75628585816!2d135.08051785!3d34.6937378!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60008d0e51249b6b%3A0x5e0f7f36a54f9a56!2sKobe%20Hyogo!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Kobe" },
+            { dayIndex: 6, dateLabel: "11/16 (월)", city: "고베", summary: "항구 도시 고베의 야경과 항만 해안도로 코스입니다.", food: "고베 규 스테이크, 아카시야키", activity: "메리켄 파크, 롯코산 야경 전망대", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d209867.75628585816!2d135.08051785!3d34.6937378!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60008d0e51249b6b%3A0x5e0f7f36a54f9a56!2sKobe%20Hyogo!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Kobe" },
             { dayIndex: 7, dateLabel: "11/17 (화)", city: "오사카 (미식과 쇼핑)", summary: "도톤보리와 덴덴타운 중심의 자유 미식 투어 일정입니다.", food: "타코야키, 오코노미야키, 쿠시카츠", activity: "도톤보리 크루즈, 오사카성 산책", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d209983.35515234123!2d135.38921865!3d34.6775704!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6000e6553406e2e1%3A0x462270f0afe22f47!2sOsaka!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Osaka" },
             { dayIndex: 8, dateLabel: "11/18 (수)", city: "오사카 / 귀국 준비", summary: "렌터카/바이크 반납 후 귀국을 준비하는 날입니다.", food: "공항 라멘, 간사이 공항 선물 쇼핑", activity: "면세점 쇼핑, 공항 라운지 휴식", mapUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d105263.2944648118!2d135.20163335!3d34.4346765!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6000b91d2bc00001%3A0x43b2354c51e067c!2sKansai%20International%20Airport!5e0!3m2!1sko!2skr!4v1700000000000", externalMap: "https://maps.google.com/?q=Kansai+International+Airport" }
         ];
@@ -323,13 +375,14 @@
 
         // Default Sample Expenses
         const defaultExpenses = [
-            { id: 1, category: "숙소/항공", title: "1일차 스وا호 온천 호텔", amountJpy: 18000 },
+            { id: 1, category: "숙소/항공", title: "1일차 스와호 온천 호텔", amountJpy: 18000 },
             { id: 2, category: "교통/이동", title: "오토바이 주유비 (나고야)", amountJpy: 2500 },
             { id: 3, category: "식사/간식", title: "나고야 점심 식사", amountJpy: 4200 }
         ];
 
-        // State Variables
+        // State Variables (Loaded from LocalStorage if available)
         let currentSelectedDay = 1;
+        let daysConfig = JSON.parse(localStorage.getItem('japan_trip_days_config')) || defaultDaysConfig;
         let scheduleItems = JSON.parse(localStorage.getItem('japan_trip_schedules')) || defaultSchedules;
         let expenseItems = JSON.parse(localStorage.getItem('japan_trip_expenses')) || defaultExpenses;
 
@@ -342,8 +395,9 @@
             setupForms();
         };
 
-        // Save data to LocalStorage
+        // Save state to LocalStorage
         function saveData() {
+            localStorage.setItem('japan_trip_days_config', JSON.stringify(daysConfig));
             localStorage.setItem('japan_trip_schedules', JSON.stringify(scheduleItems));
             localStorage.setItem('japan_trip_expenses', JSON.stringify(expenseItems));
         }
@@ -401,8 +455,45 @@
             document.getElementById('scheduleTableDateLabel').innerText = config.dateLabel;
 
             // Update Map Iframe & External Link
-            document.getElementById('mapIframe').src = config.mapUrl;
-            document.getElementById('googleMapExternalBtn').href = config.externalMap;
+            document.getElementById('mapIframe').src = config.mapUrl || 'about:blank';
+            document.getElementById('googleMapExternalBtn').href = config.externalMap || '#';
+        }
+
+        // --- DIRECT EDITING DAY INFO MODAL FUNCTIONS ---
+        function openEditDayModal() {
+            const config = daysConfig.find(d => d.dayIndex === currentSelectedDay);
+            if (!config) return;
+
+            document.getElementById('modalDayTitle').innerText = `${config.dayIndex}일차 (${config.dateLabel}) 정보 수정하기`;
+            document.getElementById('editModalCity').value = config.city || "";
+            document.getElementById('editModalSummary').value = config.summary || "";
+            document.getElementById('editModalFood').value = config.food || "";
+            document.getElementById('editModalActivity').value = config.activity || "";
+            document.getElementById('editModalMapUrl').value = config.mapUrl || "";
+            document.getElementById('editModalExternalMap').value = config.externalMap || "";
+
+            document.getElementById('editDayModal').classList.remove('hidden');
+        }
+
+        function closeEditDayModal() {
+            document.getElementById('editDayModal').classList.add('hidden');
+        }
+
+        function saveEditDayModal() {
+            const index = daysConfig.findIndex(d => d.dayIndex === currentSelectedDay);
+            if (index === -1) return;
+
+            daysConfig[index].city = document.getElementById('editModalCity').value;
+            daysConfig[index].summary = document.getElementById('editModalSummary').value;
+            daysConfig[index].food = document.getElementById('editModalFood').value;
+            daysConfig[index].activity = document.getElementById('editModalActivity').value;
+            daysConfig[index].mapUrl = document.getElementById('editModalMapUrl').value;
+            daysConfig[index].externalMap = document.getElementById('editModalExternalMap').value;
+
+            saveData();
+            renderDayInfo(currentSelectedDay);
+            closeEditDayModal();
+            showToast(`${currentSelectedDay}일차 정보가 성공적으로 저장되었습니다! ✨`);
         }
 
         // Render Schedules for Current Day
@@ -592,3 +683,21 @@
     </script>
 </body>
 </html>
+```
+
+### 추가 및 새로 구현된 수정 기능 안내
+
+1. **페이지 내 '이 날 정보 수정' 버튼 추가**
+   * 각 날짜(1일차~8일차) 상단에 **`이 날 정보 수정`** 버튼이 추가되었습니다.
+   * 이 버튼을 누르면 팝업(모달) 창이 뜹니다.
+
+2. **코딩 없이 직접 수정 가능한 항목**
+   * **오늘의 여행지 (도시 이름)**
+   * **여행지 간단 소개글**
+   * **🍴 추천 먹거리**
+   * **🎠 추천 즐길거리**
+   * **구글 지도 퍼가기 (Embed iframe URL)**
+   * **구글 지도 외부 앱 링크**
+
+3. **자동 데이터 저장 (LocalStorage)**
+   * 화면에서 수정 후 **`저장하기`**를 누르면 브라우저에 저장되어, 웹페이지를 새로고침하거나 브라우저를 껐다 켜도 입력하신 데이터가 삭제되지 않고 유지됩니다.
