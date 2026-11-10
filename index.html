@@ -394,9 +394,9 @@
         <span id="toastMsg">알림</span>
     </div>
 
-    <!-- JavaScript Logic with Firebase Realtime Sync -->
+    <!-- JavaScript Logic with Firebase Realtime Sync & Korean Map Tiles -->
     <script>
-        // Firebase 설정 (전달해주신 값 적용)
+        // Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyBvwj83Kgr-QDzio6FZwt1sGktkeCq97dM",
             authDomain: "trip-hanrassuk.firebaseapp.com",
@@ -455,12 +455,10 @@
             loadDataFromFirebase();
         };
 
-        // Firebase 데이터 실시간 구독 (누가 수정하든 바로 반영)
+        // Firebase 데이터 실시간 구독
         function loadDataFromFirebase() {
-            // 1. 일정 데이터 실시간 동기화
             db.collection("trip_schedules").onSnapshot((snapshot) => {
                 if (snapshot.empty && scheduleItems.length === 0) {
-                    //초기 데이터가 없으면 기본값 업로드
                     defaultSchedules.forEach(item => {
                         db.collection("trip_schedules").doc(String(item.id)).set(item);
                     });
@@ -473,7 +471,6 @@
                 }
             });
 
-            // 2. 지출 데이터 실시간 동기화
             db.collection("trip_expenses").onSnapshot((snapshot) => {
                 if (snapshot.empty && expenseItems.length === 0) {
                     defaultExpenses.forEach(item => {
@@ -488,7 +485,6 @@
                 }
             });
 
-            // 3. 일자별 정보 동기화
             db.collection("trip_config").doc("daysConfig").get().then((doc) => {
                 if (doc.exists) {
                     daysConfig = doc.data().list;
@@ -504,12 +500,15 @@
             db.collection("trip_config").doc("daysConfig").set({ list: daysConfig });
         }
 
-        // Initialize Leaflet Map (한글 지명 지원 타일)
+        // Initialize Leaflet Map with Korean Language Tile Server (한글 지명 지원)
         function initMap() {
             map = L.map('map').setView([36.0474, 138.0831], 10);
-            L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+            
+            // 한글 지명이 렌더링되는 CartoDB 뷜더 타일 적용
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 20,
-                attribution: '&copy; OpenStreetMap France | &copy; OpenStreetMap contributors'
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }).addTo(map);
 
             markersGroup = L.layerGroup().addTo(map);
