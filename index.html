@@ -13,6 +13,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (v10 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -203,7 +208,7 @@
                 </form>
             </div>
 
-            <!-- Schedule Cards (시간 위, 장소명 아래 배치) -->
+            <!-- Schedule Cards -->
             <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-3">
                 <div class="flex justify-between items-center border-b pb-2">
                     <h3 class="font-extrabold text-slate-900 text-xs">
@@ -334,7 +339,7 @@
                 </form>
             </div>
 
-            <!-- Expense List (카테고리 먼저, 기호 ￦, ￥ 적용) -->
+            <!-- Expense List -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                 <h3 class="font-extrabold text-xs text-slate-900 mb-3 border-b pb-2">전체 지출 내역</h3>
                 <div id="expenseList" class="divide-y divide-slate-100">
@@ -389,13 +394,26 @@
         <span id="toastMsg">알림</span>
     </div>
 
-    <!-- JavaScript Logic -->
+    <!-- JavaScript Logic with Firebase Realtime Sync -->
     <script>
+        // Firebase 설정 (전달해주신 값 적용)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvwj83Kgr-QDzio6FZwt1sGktkeCq97dM",
+            authDomain: "trip-hanrassuk.firebaseapp.com",
+            projectId: "trip-hanrassuk",
+            storageBucket: "trip-hanrassuk.firebasestorage.app",
+            messagingSenderId: "884604017581",
+            appId: "1:884604017581:web:7f4c089a29a9cb05161f24",
+            measurementId: "G-JN13MGLBC9"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         const EXCHANGE_RATE = 8.50; // 1 JPY = 8.50 KRW
         const TARGET_KRW_BUDGET = 2000000;
         const TARGET_JPY_BUDGET = 200000;
 
-        // Daily Configurations
         const defaultDaysConfig = [
             { dayIndex: 1, dateLabel: "11/11 (수)", fullDate: "11월 11일 (수)", city: "나고야 / 스와호", summary: "나고야 도착 후 스와호로 이동하는 라이딩 & 이동 코스입니다.", food: "나고야 테바사키(닭날개), 메밀소바", activity: "스와호 둘레길 드라이브, 야경 관람", externalMap: "https://maps.google.com/?q=Lake+Suwa" },
             { dayIndex: 2, dateLabel: "11/12 (목)", fullDate: "11월 12일 (목)", city: "시즈오카 / 후지산 주변", summary: "후지산 전경을 조망하며 달리는 와인딩 라이딩 코스입니다.", food: "시즈오카 오뎅, 녹차 디저트, 장어덮밥", activity: "후지산 전망대, 후지 5호 탐방", externalMap: "https://maps.google.com/?q=Mount+Fuji" },
@@ -407,7 +425,6 @@
             { dayIndex: 8, dateLabel: "11/18 (수)", fullDate: "11월 18일 (수)", city: "오사카 / 귀국 준비", summary: "렌터카/바이크 반납 후 귀국을 준비하는 날입니다.", food: "공항 라멘, 간사이 공항 선물 쇼핑", activity: "면세점 쇼핑, 공항 라운지 휴식", externalMap: "https://maps.google.com/?q=Kansai+International+Airport" }
         ];
 
-        // Sample Schedules
         const defaultSchedules = [
             { id: 1, dayIndex: 1, startTime: "10:00", endTime: "11:30", title: "나고야 공항 도착 & 오토바이 인수", lat: 34.8583, lng: 136.8053, memo: "서류 및 렌트 바이크 점검" },
             { id: 2, dayIndex: 1, startTime: "12:00", endTime: "13:30", title: "점심: 나고야 테바사키 맛집", lat: 35.1709, lng: 136.9076, memo: "주차 공간 사전 확인" },
@@ -415,7 +432,6 @@
             { id: 4, dayIndex: 2, startTime: "09:30", endTime: "12:00", title: "시즈오카 후지산 전망 도로 주행", lat: 35.3606, lng: 138.7274, memo: "안전 라이딩 수칙 준수" }
         ];
 
-        // Sample Expenses
         const defaultExpenses = [
             { id: 1, currency: "KRW", category: "숙소/항공", title: "인천-나고야 항공권 (사전결제)", amount: 450000 },
             { id: 2, currency: "KRW", category: "교통/이동", title: "오토바이 7일 렌트 예약금", amount: 620000 },
@@ -424,10 +440,9 @@
             { id: 5, currency: "JPY", category: "식사/간식", title: "나고야 테바사키 점심 식사", amount: 4200 }
         ];
 
-        // State
         let daysConfig = JSON.parse(localStorage.getItem('japan_days_config')) || defaultDaysConfig;
-        let scheduleItems = JSON.parse(localStorage.getItem('japan_trip_schedules')) || defaultSchedules;
-        let expenseItems = JSON.parse(localStorage.getItem('japan_trip_expenses')) || defaultExpenses;
+        let scheduleItems = [];
+        let expenseItems = [];
         let currentSelectedDay = 1;
 
         let map, markersGroup;
@@ -436,23 +451,65 @@
             initMap();
             renderDayTabs();
             renderDayInfo(1);
-            renderScheduleList();
-            renderExpenseList();
             setupForms();
+            loadDataFromFirebase();
         };
 
-        function saveData() {
-            localStorage.setItem('japan_days_config', JSON.stringify(daysConfig));
-            localStorage.setItem('japan_trip_schedules', JSON.stringify(scheduleItems));
-            localStorage.setItem('japan_trip_expenses', JSON.stringify(expenseItems));
+        // Firebase 데이터 실시간 구독 (누가 수정하든 바로 반영)
+        function loadDataFromFirebase() {
+            // 1. 일정 데이터 실시간 동기화
+            db.collection("trip_schedules").onSnapshot((snapshot) => {
+                if (snapshot.empty && scheduleItems.length === 0) {
+                    //초기 데이터가 없으면 기본값 업로드
+                    defaultSchedules.forEach(item => {
+                        db.collection("trip_schedules").doc(String(item.id)).set(item);
+                    });
+                } else {
+                    scheduleItems = [];
+                    snapshot.forEach((doc) => {
+                        scheduleItems.push(doc.data());
+                    });
+                    renderScheduleList();
+                }
+            });
+
+            // 2. 지출 데이터 실시간 동기화
+            db.collection("trip_expenses").onSnapshot((snapshot) => {
+                if (snapshot.empty && expenseItems.length === 0) {
+                    defaultExpenses.forEach(item => {
+                        db.collection("trip_expenses").doc(String(item.id)).set(item);
+                    });
+                } else {
+                    expenseItems = [];
+                    snapshot.forEach((doc) => {
+                        expenseItems.push(doc.data());
+                    });
+                    renderExpenseList();
+                }
+            });
+
+            // 3. 일자별 정보 동기화
+            db.collection("trip_config").doc("daysConfig").get().then((doc) => {
+                if (doc.exists) {
+                    daysConfig = doc.data().list;
+                    renderDayTabs();
+                    renderDayInfo(currentSelectedDay);
+                } else {
+                    db.collection("trip_config").doc("daysConfig").set({ list: defaultDaysConfig });
+                }
+            });
         }
 
-        // Initialize Leaflet Map
+        function saveConfigToFirebase() {
+            db.collection("trip_config").doc("daysConfig").set({ list: daysConfig });
+        }
+
+        // Initialize Leaflet Map (한글 지명 지원 타일)
         function initMap() {
             map = L.map('map').setView([36.0474, 138.0831], 10);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
+            L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+                maxZoom: 20,
+                attribution: '&copy; OpenStreetMap France | &copy; OpenStreetMap contributors'
             }).addTo(map);
 
             markersGroup = L.layerGroup().addTo(map);
@@ -563,7 +620,6 @@
             updateMapMarkers();
         }
 
-        // 일정 목록 렌더링 (시간 위, 장소명 아래 세로 배치)
         function renderScheduleList() {
             const container = document.getElementById('scheduleList');
             const filtered = scheduleItems.filter(item => item.dayIndex === currentSelectedDay);
@@ -586,13 +642,11 @@
                             ${idx + 1}
                         </span>
                         <div class="w-full space-y-1.5">
-                            <!-- 시간 (위) -->
                             <div>
                                 <span class="bg-sky-100 text-sky-800 px-2.5 py-1 rounded-lg font-bold text-[11px] inline-flex items-center">
                                     <i class="fa-regular fa-clock mr-1"></i>${item.startTime} ~ ${item.endTime}
                                 </span>
                             </div>
-                            <!-- 장소명 / 일정 제목 (아래) -->
                             <div>
                                 <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug">${item.title}</h4>
                             </div>
@@ -649,13 +703,11 @@
         }
 
         function deleteSchedule(id) {
-            scheduleItems = scheduleItems.filter(item => item.id !== id);
-            saveData();
-            renderScheduleList();
-            showToast("일정이 삭제되었습니다.");
+            db.collection("trip_schedules").doc(String(id)).delete().then(() => {
+                showToast("일정이 삭제되었습니다.");
+            });
         }
 
-        // 지출 목록 렌더링 (카테고리 먼저 배치, ￦ ￥ 기호 적용)
         function renderExpenseList() {
             const container = document.getElementById('expenseList');
 
@@ -710,7 +762,6 @@
                 return `
                     <div class="py-3 flex justify-between items-center text-xs">
                         <div class="space-y-1 pr-2">
-                            <!-- 카테고리를 먼저 배치하고 ￦, ￥ 기호 적용 -->
                             <div>
                                 <span class="${isKrw ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'} border px-2 py-0.5 rounded-md font-bold text-[11px] inline-block">
                                     ${currencySymbol} | ${item.category}
@@ -734,10 +785,9 @@
         }
 
         function deleteExpense(id) {
-            expenseItems = expenseItems.filter(item => item.id !== id);
-            saveData();
-            renderExpenseList();
-            showToast("지출 내역이 삭제되었습니다.");
+            db.collection("trip_expenses").doc(String(id)).delete().then(() => {
+                showToast("지출 내역이 삭제되었습니다.");
+            });
         }
 
         function setupForms() {
@@ -752,21 +802,15 @@
                 const lng = document.getElementById('inputLng').value;
                 const memo = document.getElementById('inputMemo').value;
 
-                if (editingId) {
-                    const idx = scheduleItems.findIndex(i => i.id == editingId);
-                    if (idx !== -1) {
-                        scheduleItems[idx] = { id: Number(editingId), dayIndex, startTime, endTime, title, lat, lng, memo };
-                        showToast("일정이 수정되었습니다.");
-                    }
-                } else {
-                    scheduleItems.push({ id: Date.now(), dayIndex, startTime, endTime, title, lat, lng, memo });
-                    showToast("새 일정이 추가되었습니다!");
-                }
+                const id = editingId ? Number(editingId) : Date.now();
+                const itemData = { id, dayIndex, startTime, endTime, title, lat, lng, memo };
 
-                saveData();
-                selectDay(dayIndex);
-                cancelEdit();
-                toggleForm();
+                db.collection("trip_schedules").doc(String(id)).set(itemData).then(() => {
+                    showToast(editingId ? "일정이 수정되었습니다." : "새 일정이 추가되었습니다!");
+                    selectDay(dayIndex);
+                    cancelEdit();
+                    if (!document.getElementById('scheduleForm').classList.contains('hidden')) toggleForm();
+                });
             });
 
             document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
@@ -776,11 +820,13 @@
                 const title = document.getElementById('expTitle').value;
                 const amount = Number(document.getElementById('expAmount').value);
 
-                expenseItems.push({ id: Date.now(), currency, category, title, amount });
-                saveData();
-                renderExpenseList();
-                this.reset();
-                showToast("지출 내역이 등록되었습니다.");
+                const id = Date.now();
+                const expData = { id, currency, category, title, amount };
+
+                db.collection("trip_expenses").doc(String(id)).set(expData).then(() => {
+                    showToast("지출 내역이 등록되었습니다.");
+                    this.reset();
+                });
             });
         }
 
@@ -811,7 +857,7 @@
                 config.activity = document.getElementById('editActivity').value;
                 config.externalMap = document.getElementById('editExternalMap').value;
 
-                saveData();
+                saveConfigToFirebase();
                 renderDayInfo(currentSelectedDay);
                 closeInfoEditModal();
                 showToast("오늘의 여행지 소개 정보가 수정되었습니다.");
