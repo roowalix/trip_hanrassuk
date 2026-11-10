@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 일본 여행 일정 공유</title>
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS & JS for Interactive Map -->
+    <!-- Leaflet JS/CSS for Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- FontAwesome Icons -->
@@ -15,36 +15,95 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; }
-        <!-- 3. Daily Destination Info (Editable directly on page via Modal) -->
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .tab-active { color: #0284c7; border-bottom: 3px solid #0284c7; font-weight: 700; }
+        .day-active { background-color: #0284c7 !important; color: #ffffff !important; }
+        #map { z-index: 10; min-height: 280px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-16">
+
+    <!-- Top Weather Link -->
+    <a href="https://www.google.com/search?q=일본+날씨" 
+       target="_blank" 
+       rel="noopener noreferrer"
+       class="block bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white hover:brightness-105 transition shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-2 flex justify-between items-center text-xs">
+            <div class="flex items-center space-x-2">
+                <span class="bg-white/20 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
+                    <i class="fa-solid fa-cloud-sun mr-1"></i>구글 날씨
+                </span>
+                <span class="font-medium">일본 주간 날씨 및 실시간 일기예보 검색 ☀️🌧️</span>
+            </div>
+            <div class="flex items-center space-x-1 font-medium text-sky-100 hover:text-white">
+                <span>구글 날씨 바로가기</span>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </div>
+        </div>
+    </a>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-sky-600 text-white p-2.5 rounded-xl shadow">
+                    <i class="fa-solid fa-motorcycle text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight text-slate-800">
+                        [2026 일본 여행 - 1부 : 코리안 라이더스 / 2부 : 미식과 지식]
+                    </h1>
+                    <span class="text-xs text-sky-600 font-semibold">2026.11.11 - 11.18 (7박 8일)</span>
+                </div>
+            </div>
+            <button onclick="shareLink()" class="bg-sky-50 hover:bg-sky-100 text-sky-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center space-x-1 transition shrink-0">
+                <i class="fa-solid fa-share-nodes"></i>
+                <span>공유</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
+
+        <!-- Date Selector Tabs (11/11 수 ~ 11/18 수) -->
+        <section class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex space-x-2 overflow-x-auto pb-1 pt-1 scrollbar-none" id="dayTabs">
+                <!-- Dynamic Tabs Rendered by JS -->
+            </div>
+        </section>
+
+        <!-- Daily Destination Info (Editable) -->
         <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
             <div class="flex justify-between items-center border-b pb-2.5 border-slate-100">
                 <div class="flex items-center space-x-2">
-                    <span class="bg-sky-100 text-sky-700 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center">
-                        <i class="fa-solid fa-calendar-day mr-1.5"></i><span id="currentDayHeader">1일차 : 11월 11일 (수)</span>
+                    <span class="bg-sky-100 text-sky-700 px-2.5 py-1 rounded-lg text-xs font-bold" id="currentDayHeader">
+                        1일차 : 11월 11일 (수)
                     </span>
                     <h2 class="font-bold text-slate-800 text-base">
                         오늘의 여행지 : <span id="destCityName" class="text-sky-600">나고야 / 스와호</span>
                     </h2>
                 </div>
-                <!-- EDIT BUTTON FOR CURRENT DAY INFO -->
-                <button onclick="openEditDayModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition shrink-0">
+                <button onclick="openInfoEditModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium flex items-center space-x-1 transition">
                     <i class="fa-solid fa-pen-to-square text-sky-600"></i>
-                    <span>이 날 정보 수정</span>
+                    <span>소개 수정</span>
                 </button>
             </div>
 
             <!-- Destination Brief Summary -->
             <p id="destSummary" class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-                라이딩 출발 및 일본 중심부 호수 지역으로 이동하는 코스입니다.
+                나고야 도착 후 스와호로 이동하는 라이딩 & 이동 코스입니다.
             </p>
 
-            <!-- Food & Activity Icons Summary -->
+            <!-- Food & Activity Summaries -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
                 <div class="bg-amber-50/80 border border-amber-200 p-3 rounded-xl flex items-start space-x-2.5">
                     <span class="text-xl leading-none">🍴</span>
                     <div>
                         <h3 class="font-bold text-amber-900 mb-1">먹거리</h3>
-                        <p id="destFoodText" class="text-slate-700">나고야 테바사키(닭날개), 메밀소바</p>
+                        <p id="destFoodText" class="text-slate-700">나고야 테바사키(닭날개 튀김), 스와호 지역 메밀소바 및 온천 요리</p>
                     </div>
                 </div>
 
@@ -52,90 +111,29 @@
                     <span class="text-xl leading-none">🎠</span>
                     <div>
                         <h3 class="font-bold text-purple-900 mb-1">즐길거리</h3>
-                        <p id="destActivityText" class="text-slate-700">스와호 둘레길 드라이브, 야경 관람</p>
+                        <p id="destActivityText" class="text-slate-700">스와호 호수 둘레길 라이딩, 야경 전망대, 온천 휴식</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3-2. Daily Map View (Interactive Map + Google Map External Link) -->
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-            <div class="flex justify-between items-center mb-3">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-map-location-dot text-sky-600 text-lg"></i>
-                    <h2 class="font-bold text-slate-800 text-sm">일자별 여행 지도 (나침반 🧭 클릭시 위치 이동)</h2>
-                </div>
-                <a id="googleMapExternalBtn" href="#" target="_blank" class="text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1">
-                    <span>구글맵 앱에서 보기</span>
-                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                </a>
-            </div>
-            <!-- Dynamic Interactive Map Container -->
-            <div id="interactiveMap" class="w-full h-72 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative shadow-inner z-10"></div>
-        </section>
-
-        <!-- Daily Destination Info -->
+        <!-- Interactive Map Section (Leaflet Map) -->
         <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
-            <div class="flex justify-between items-center border-b pb-2.5 border-slate-100">
+            <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-2">
-                    <span class="bg-sky-100 text-sky-700 px-2.5 py-1 rounded-lg text-xs font-bold">
-                        <i class="fa-solid fa-calendar-day mr-1"></i><span id="currentDayLabel">1일차 : 11월 11일 (수)</span>
-                    </span>
-                    <h2 class="font-bold text-slate-800 text-base">
-                        오늘의 여행지 : <span id="destCityName" class="text-sky-600">나고야 / 스와호</span>
-                    </h2>
-                </div>
-                <!-- EDIT BUTTON FOR CURRENT DAY INFO -->
-                <button onclick="openEditDayModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition shrink-0">
-                    <i class="fa-solid fa-pen-to-square text-sky-600"></i>
-                    <span>이 날 정보 수정</span>
-                </button>
-            </div>
-
-            <!-- Destination Brief Summary -->
-            <p id="destSummary" class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-                라이딩 출발 및 일본 중심부 호수 지역으로 이동하는 코스입니다.
-            </p>
-
-            <!-- Food & Activity Icons Summary -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-                <div class="bg-amber-50/80 border border-amber-200 p-3 rounded-xl flex items-start space-x-2.5">
-                    <span class="text-xl leading-none">🍴</span>
-                    <div>
-                        <h3 class="font-bold text-amber-900 mb-1">먹거리</h3>
-                        <p id="destFoodText" class="text-slate-700">나고야 테바사키(닭날개), 메밀소바</p>
-                    </div>
-                </div>
-
-                <div class="bg-purple-50/80 border border-purple-200 p-3 rounded-xl flex items-start space-x-2.5">
-                    <span class="text-xl leading-none">🎠</span>
-                    <div>
-                        <h3 class="font-bold text-purple-900 mb-1">즐길거리</h3>
-                        <p id="destActivityText" class="text-slate-700">스와호 둘레길 드라이브, 야경 관람</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Daily Map View -->
-        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-            <div class="flex justify-between items-center mb-3">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-map-location-dot text-sky-600 text-lg"></i>
-                    <h2 class="font-bold text-slate-800 text-sm">일자별 구글 지도 (선택 일자 전용)</h2>
+                    <i class="fa-solid fa-compass text-sky-600 text-lg"></i>
+                    <h2 class="font-bold text-slate-800 text-sm">일자별 지도 (나침반 연동)</h2>
                 </div>
                 <a id="googleMapExternalBtn" href="#" target="_blank" class="text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1">
                     <span>구글맵 앱에서 보기</span>
                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                 </a>
             </div>
-            <!-- Dynamic Iframe Map Container -->
-            <div class="w-full h-64 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative">
-                <iframe id="mapIframe" class="w-full h-full border-0" loading="lazy" allowfullscreen src="about:blank"></iframe>
-            </div>
+            <!-- Leaflet Map Container -->
+            <div id="map" class="w-full h-64 rounded-xl border border-slate-200 overflow-hidden shadow-inner"></div>
         </section>
 
-        <!-- Main Navigation Tabs (Schedule vs Budget) -->
+        <!-- Navigation Tabs (Schedule vs Budget) -->
         <div class="flex border-b border-slate-200 bg-white rounded-t-2xl px-2 pt-2">
             <button id="tabSchedBtn" onclick="switchTab('schedule')" class="flex-1 py-3 text-center font-bold text-xs sm:text-sm tab-active flex justify-center items-center space-x-2">
                 <i class="fa-solid fa-list-check"></i>
@@ -143,24 +141,24 @@
             </button>
             <button id="tabExpBtn" onclick="switchTab('expense')" class="flex-1 py-3 text-center font-bold text-xs sm:text-sm text-slate-400 flex justify-center items-center space-x-2">
                 <i class="fa-solid fa-coins"></i>
-                <span>총 지출 (원화/엔화 정산)</span>
+                <span>총 지출 (원화/엔화 개별 정산)</span>
             </button>
         </div>
 
         <!-- TAB 1: SCHEDULE TABLE -->
         <div id="tabSchedule" class="space-y-4">
-            <!-- Add / Edit Schedule Form Accordion -->
+            <!-- Add/Edit Schedule Form -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                 <div class="flex justify-between items-center cursor-pointer select-none" onclick="toggleForm()">
-                    <h3 id="formTitleLabel" class="font-bold text-xs sm:text-sm text-slate-700 flex items-center space-x-2">
+                    <h3 id="formTitle" class="font-bold text-xs sm:text-sm text-slate-700 flex items-center space-x-2">
                         <i class="fa-solid fa-circle-plus text-sky-600"></i>
                         <span>새 일정 항목 추가하기</span>
                     </h3>
                     <i id="formIcon" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
                 </div>
 
-                <form id="addScheduleForm" class="mt-3 space-y-3 hidden pt-3 border-t border-slate-100 text-xs">
-                    <input type="hidden" id="editingScheduleId" value="">
+                <form id="scheduleForm" class="mt-3 space-y-3 hidden pt-3 border-t border-slate-100 text-xs">
+                    <input type="hidden" id="editingItemId" value="">
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <div>
                             <label class="text-slate-500 block mb-1">일자 선택</label>
@@ -179,7 +177,7 @@
                     </div>
                     <div>
                         <label class="text-slate-500 block mb-1">장소명 / 일정 제목</label>
-                        <input type="text" id="inputTitle" placeholder="예: 스와호 전망대 방문" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500" required>
+                        <input type="text" id="inputTitle" placeholder="예: 스와호 전망대 라이딩 방문" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500" required>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -193,26 +191,26 @@
                     </div>
                     <div>
                         <label class="text-slate-500 block mb-1">메모</label>
-                        <input type="text" id="inputMemo" placeholder="예: 바이크 주차장 확보 확인" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="text" id="inputMemo" placeholder="예: 무료 바이크 주차장 확보 확인" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                     <div class="flex space-x-2">
-                        <button type="submit" id="submitScheduleBtn" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-xl shadow transition">
+                        <button type="submit" id="submitBtn" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 rounded-xl shadow transition">
                             일정 등록
                         </button>
-                        <button type="button" id="cancelEditScheduleBtn" onclick="cancelScheduleEdit()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl font-medium transition">
+                        <button type="button" id="cancelEditBtn" onclick="cancelEdit()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold transition">
                             취소
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Schedule List / Table -->
+            <!-- Schedule List -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
                 <div class="flex justify-between items-center border-b pb-2">
                     <h3 class="font-bold text-slate-800 text-xs sm:text-sm">
-                        <span id="scheduleTableDateLabel">11/11 (수)</span> 일정 리스트
+                        <span id="scheduleTableDateLabel">11/11 (수)</span> 일정 공유표
                     </h3>
-                    <span class="text-[11px] text-slate-400">시간순 정렬</span>
+                    <span class="text-[11px] text-slate-400">🧭 클릭시 상단 지도 이동</span>
                 </div>
                 <div id="scheduleList" class="space-y-2">
                     <!-- Dynamic rendering -->
@@ -220,56 +218,105 @@
             </div>
         </div>
 
-        <!-- TAB 2: BUDGET & EXPENSES (JPY + KRW) -->
+        <!-- TAB 2: SEPARATE KRW & JPY BUDGET/EXPENSES -->
         <div id="tabExpense" class="space-y-4 hidden">
-            <!-- Total Budget Card -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs text-slate-400 font-bold block">총 누적/예상 지출</span>
-                        <div class="flex items-baseline space-x-2 mt-1">
-                            <h3 id="totalJpyDisplay" class="text-2xl sm:text-3xl font-extrabold text-slate-800">¥ 0</h3>
-                            <span id="totalKrwDisplay" class="text-xs sm:text-sm font-semibold text-sky-600">(0 원)</span>
+            <!-- Separate Budget Summaries -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- KRW Summary -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs text-slate-400 font-bold block">원화(KRW) 결제 총액</span>
+                            <h3 id="totalKrwSum" class="text-2xl font-extrabold text-slate-800 mt-0.5">₩ 0</h3>
+                        </div>
+                        <div class="bg-blue-50 text-blue-600 p-2 rounded-xl border border-blue-100">
+                            <i class="fa-solid fa-won-sign text-lg"></i>
                         </div>
                     </div>
-                    <div class="bg-amber-50 text-amber-600 px-3 py-2 rounded-xl border border-amber-100 text-center text-xs font-bold">
-                        적용 환율: 1엔 = 8.50원
+                    <!-- KRW Progress Bar -->
+                    <div>
+                        <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+                            <span>원화 예산 대비 지출</span>
+                            <span id="krwBarPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div id="krwBar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <!-- KRW Categories -->
+                    <div class="grid grid-cols-3 gap-1 pt-1 text-center text-[11px]">
+                        <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block">숙소/항공</span>
+                            <span id="krwCatStay" class="font-bold text-slate-700">₩0</span>
+                        </div>
+                        <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block">교통/이동</span>
+                            <span id="krwCatTransport" class="font-bold text-slate-700">₩0</span>
+                        </div>
+                        <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block">기타</span>
+                            <span id="krwCatEtc" class="font-bold text-slate-700">₩0</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Expense Categories Grid (5 Categories) -->
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-slate-100 text-center text-xs">
-                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <span class="text-slate-400 block text-[11px]">숙소/항공</span>
-                        <span id="catStay" class="font-bold text-slate-700 block mt-0.5">¥0</span>
+                <!-- JPY Summary -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs text-slate-400 font-bold block">엔화(JPY) 결제 총액</span>
+                            <div class="flex items-baseline space-x-1.5 mt-0.5">
+                                <h3 id="totalJpySum" class="text-2xl font-extrabold text-slate-800">¥ 0</h3>
+                                <span id="totalJpyConverted" class="text-xs text-sky-600 font-bold">(0원)</span>
+                            </div>
+                        </div>
+                        <div class="bg-amber-50 text-amber-600 p-2 rounded-xl border border-amber-100">
+                            <i class="fa-solid fa-yen-sign text-lg"></i>
+                        </div>
                     </div>
-                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <span class="text-slate-400 block text-[11px]">교통/이동</span>
-                        <span id="catTransport" class="font-bold text-slate-700 block mt-0.5">¥0</span>
+                    <!-- JPY Progress Bar -->
+                    <div>
+                        <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+                            <span>엔화 예산 대비 지출 (환율 1엔 = 8.50원)</span>
+                            <span id="jpyBarPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div id="jpyBar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <span class="text-slate-400 block text-[11px]">식사/간식</span>
-                        <span id="catFood" class="font-bold text-slate-700 block mt-0.5">¥0</span>
-                    </div>
-                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <span class="text-slate-400 block text-[11px]">관람/체험</span>
-                        <span id="catActivity" class="font-bold text-slate-700 block mt-0.5">¥0</span>
-                    </div>
-                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-100 col-span-2 sm:col-span-1">
-                        <span class="text-slate-400 block text-[11px]">쇼핑/기타</span>
-                        <span id="catEtc" class="font-bold text-slate-700 block mt-0.5">¥0</span>
+                    <!-- JPY Categories -->
+                    <div class="grid grid-cols-3 gap-1 pt-1 text-center text-[11px]">
+                        <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block">식사/간식</span>
+                            <span id="jpyCatFood" class="font-bold text-slate-700">¥0</span>
+                        </div>
+                        <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block">관람/체험</span>
+                            <span id="jpyCatActivity" class="font-bold text-slate-700">¥0</span>
+                        </div>
+                        <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block">쇼핑/기타</span>
+                            <span id="jpyCatEtc" class="font-bold text-slate-700">¥0</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Add Expense Form -->
+            <!-- Add Expense Form (KRW & JPY Support) -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                 <h3 class="font-bold text-xs sm:text-sm text-slate-700 mb-3 flex items-center space-x-2">
                     <i class="fa-solid fa-receipt text-emerald-600"></i>
-                    <span>지출 내역 입력 (엔화 입력 시 원화 자동 계산)</span>
+                    <span>지출 내역 등록 (원화/엔화 선택 가능)</span>
                 </h3>
                 <form id="addExpenseForm" class="space-y-3 text-xs">
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="text-slate-500 block mb-1">결제 화폐</label>
+                            <select id="expCurrency" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500 font-bold">
+                                <option value="KRW">원화 (₩ KRW)</option>
+                                <option value="JPY">엔화 (¥ JPY)</option>
+                            </select>
+                        </div>
                         <div>
                             <label class="text-slate-500 block mb-1">카테고리</label>
                             <select id="expCategory" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500">
@@ -281,13 +328,13 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-slate-500 block mb-1">금액 (엔화 JPY 기준)</label>
-                            <input type="number" id="expAmountJpy" placeholder="예: 5000" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500" required>
+                            <label class="text-slate-500 block mb-1">금액</label>
+                            <input type="number" id="expAmount" placeholder="예: 150000" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500" required>
                         </div>
                     </div>
                     <div>
                         <label class="text-slate-500 block mb-1">지출 내역 메모</label>
-                        <input type="text" id="expTitle" placeholder="예: 스와호 근처 주유소 기름 작성" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500" required>
+                        <input type="text" id="expTitle" placeholder="예: 항공권 결제 또는 스와호 온천 호텔" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500" required>
                     </div>
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl shadow transition">
                         지출 추가하기
@@ -297,7 +344,7 @@
 
             <!-- Expense List -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <h3 class="font-bold text-xs sm:text-sm text-slate-800 mb-3 border-b pb-2">지출 전체 목록</h3>
+                <h3 class="font-bold text-xs sm:text-sm text-slate-800 mb-3 border-b pb-2">전체 지출 내역</h3>
                 <div id="expenseList" class="divide-y divide-slate-100">
                     <!-- Dynamic rendering -->
                 </div>
@@ -305,49 +352,41 @@
         </div>
     </main>
 
-    <!-- MODAL: EDIT DAY INFO (Direct Editing for Users without Coding) -->
-    <div id="editDayModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-xl">
+    <!-- Modal for Destination Info Editing -->
+    <div id="infoEditModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-xl text-xs">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="font-bold text-slate-800 text-sm">
-                    <i class="fa-solid fa-sliders text-sky-600 mr-1.5"></i>
-                    <span id="modalDayTitle">1일차 정보 수정하기</span>
+                    <i class="fa-solid fa-pen-to-square text-sky-600 mr-2"></i>
+                    <span id="modalDayTitle">1일차 소개 정보 수정</span>
                 </h3>
-                <button onclick="closeEditDayModal()" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+                <button onclick="closeInfoEditModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            
-            <div class="space-y-3 text-xs">
+            <div class="space-y-3">
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">오늘의 여행지 (도시 이름)</label>
-                    <input type="text" id="editModalCity" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                    <label class="font-semibold block mb-1">오늘의 여행지 (도시명)</label>
+                    <input type="text" id="editCityName" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">여행지 간단 소개글</label>
-                    <textarea id="editModalSummary" rows="2" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"></textarea>
+                    <label class="font-semibold block mb-1">여행지 간단 소개</label>
+                    <textarea id="editSummary" rows="2" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500"></textarea>
                 </div>
                 <div>
-                    <label class="font-bold text-amber-900 block mb-1">🍴 추천 먹거리</label>
-                    <input type="text" id="editModalFood" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                    <label class="font-semibold block mb-1">🍴 추천 먹거리</label>
+                    <textarea id="editFood" rows="2" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500"></textarea>
                 </div>
                 <div>
-                    <label class="font-bold text-purple-900 block mb-1">🎠 추천 즐길거리</label>
-                    <input type="text" id="editModalActivity" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                    <label class="font-semibold block mb-1">🎠 추천 즐길거리</label>
+                    <textarea id="editActivity" rows="2" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500"></textarea>
                 </div>
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">구글 지도 퍼가기 (Embed iframe URL)</label>
-                    <input type="text" id="editModalMapUrl" placeholder="https://www.google.com/maps/embed?..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
-                </div>
-                <div>
-                    <label class="font-bold text-slate-700 block mb-1">구글 지도 외부 앱 링크 (전체 지도시 보기)</label>
-                    <input type="text" id="editModalExternalMap" placeholder="https://maps.google.com/..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                    <label class="font-semibold block mb-1">구글맵 외부 열기 URL (선택)</label>
+                    <input type="text" id="editExternalMap" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
             </div>
-
             <div class="flex justify-end space-x-2 border-t pt-3">
-                <button onclick="closeEditDayModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold">취소</button>
-                <button onclick="saveEditDayModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow">저장하기</button>
+                <button onclick="closeInfoEditModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium">취소</button>
+                <button onclick="saveDayInfo()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-medium shadow">저장하기</button>
             </div>
         </div>
     </div>
@@ -358,48 +397,52 @@
         <span id="toastMsg">알림</span>
     </div>
 
-    <!-- JavaScript Script -->
+    <!-- JavaScript Logic -->
     <script>
         const EXCHANGE_RATE = 8.50; // 1 JPY = 8.50 KRW
+        const TARGET_KRW_BUDGET = 2000000;
+        const TARGET_JPY_BUDGET = 200000;
 
-        // Default Daily Information Data
+        // Daily Configurations
         const defaultDaysConfig = [
-            { dayIndex: 1, dateLabel: "11/11 (수)", fullDateStr: "11월 11일 (수)", city: "나고야 / 스와호", summary: "나고야 도착 후 스와호로 이동하는 라이딩 & 이동 코스입니다.", food: "나고야 테바사키(닭날개), 메밀소바", activity: "스와호 둘레길 드라이브, 야경 관람", defaultLat: 36.0474, defaultLng: 138.0831, externalMap: "https://maps.google.com/?q=Lake+Suwa" },
-            { dayIndex: 2, dateLabel: "11/12 (목)", fullDateStr: "11월 12일 (목)", city: "시즈오카 / 후지산 주변", summary: "후지산 전경을 조망하며 달리는 와인딩 라이딩 코스입니다.", food: "시즈오카 오뎅, 녹차 디저트, 장어덮밥", activity: "후지산 패러글라이딩/전망대, 후지 5호 탐방", defaultLat: 35.3606, defaultLng: 138.7274, externalMap: "https://maps.google.com/?q=Mount+Fuji" },
-            { dayIndex: 3, dateLabel: "11/13 (금)", fullDateStr: "11월 13일 (금)", city: "기후 / 타카야마", summary: "전통 가옥과 역사적 거리 풍경을 즐길 수 있는 미식 탐방입니다.", food: "히다규 고기 구이, 타카야마 라멘", activity: "산마치 전통거리 산책, 온천 체험", defaultLat: 36.1408, defaultLng: 137.2029, externalMap: "https://maps.google.com/?q=Takayama+Gifu" },
-            { dayIndex: 4, dateLabel: "11/14 (토)", fullDateStr: "11월 14일 (토)", city: "카나자와", summary: "동해 해안도로 라이딩과 현대 미술관 탐방 코스입니다.", food: "해산물 덮밥(카이센동), 금박 아이스크림", activity: "켄로쿠엔 정원, 21세기 미술관", defaultLat: 36.5613, defaultLng: 136.6023, externalMap: "https://maps.google.com/?q=Kanazawa" },
-            { dayIndex: 5, dateLabel: "11/15 (일)", fullDateStr: "11월 15일 (일)", city: "교토", summary: "역사와 문화가 숨쉬는 천년 고도 교토 시내 투어입니다.", food: "교토 정식(가이세키), 우지 말차", activity: "청수사(키요미즈데라), 아라시야마 대나무숲", defaultLat: 35.0210, defaultLng: 135.6320, externalMap: "https://maps.google.com/?q=Kyoto" },
-            { dayIndex: 6, dateLabel: "11/16 (월)", fullDateStr: "11월 16일 (월)", city: "고베", summary: "항구 도시 고베의 야경과 항만 해안도로 코스입니다.", food: "고베 규 스테이크, 아카시야키", activity: "메리켄 파크, 롯코산 야경 전망대", defaultLat: 34.6937, defaultLng: 135.0805, externalMap: "https://maps.google.com/?q=Kobe" },
-            { dayIndex: 7, dateLabel: "11/17 (화)", fullDateStr: "11월 17일 (화)", city: "오사카 (미식과 쇼핑)", summary: "도톤보리와 덴덴타운 중심의 자유 미식 투어 일정입니다.", food: "타코야키, 오코노미야키, 쿠시카츠", activity: "도톤보리 크루즈, 오사카성 산책", defaultLat: 34.6775, defaultLng: 135.3892, externalMap: "https://maps.google.com/?q=Osaka" },
-            { dayIndex: 8, dateLabel: "11/18 (수)", fullDateStr: "11월 18일 (수)", city: "오사카 / 귀국 준비", summary: "렌터카/바이크 반납 후 귀국을 준비하는 날입니다.", food: "공항 라멘, 간사이 공항 선물 쇼핑", activity: "면세점 쇼핑, 공항 라라운지 휴식", defaultLat: 34.4346, defaultLng: 135.2016, externalMap: "https://maps.google.com/?q=Kansai+International+Airport" }
+            { dayIndex: 1, dateLabel: "11/11 (수)", fullDate: "11월 11일 (수)", city: "나고야 / 스와호", summary: "나고야 도착 후 스와호로 이동하는 라이딩 & 이동 코스입니다.", food: "나고야 테바사키(닭날개), 메밀소바", activity: "스와호 둘레길 드라이브, 야경 관람", externalMap: "https://maps.google.com/?q=Lake+Suwa" },
+            { dayIndex: 2, dateLabel: "11/12 (목)", fullDate: "11월 12일 (목)", city: "시즈오카 / 후지산 주변", summary: "후지산 전경을 조망하며 달리는 와인딩 라이딩 코스입니다.", food: "시즈오카 오뎅, 녹차 디저트, 장어덮밥", activity: "후지산 전망대, 후지 5호 탐방", externalMap: "https://maps.google.com/?q=Mount+Fuji" },
+            { dayIndex: 3, dateLabel: "11/13 (금)", fullDate: "11월 13일 (금)", city: "기후 / 타카야마", summary: "전통 가옥과 역사적 거리 풍경을 즐길 수 있는 미식 탐방입니다.", food: "히다규 고기 구이, 타카야마 라멘", activity: "산마치 전통거리 산책, 온천 체험", externalMap: "https://maps.google.com/?q=Takayama+Gifu" },
+            { dayIndex: 4, dateLabel: "11/14 (토)", fullDate: "11월 14일 (토)", city: "카나자와", summary: "동해 해안도로 라이딩과 현대 미술관 탐방 코스입니다.", food: "해산물 덮밥(카이센동), 금박 아이스크림", activity: "켄로쿠엔 정원, 21세기 미술관", externalMap: "https://maps.google.com/?q=Kanazawa" },
+            { dayIndex: 5, dateLabel: "11/15 (일)", fullDate: "11월 15일 (일)", city: "교토", summary: "역사와 문화가 숨쉬는 천년 고도 교토 시내 투어입니다.", food: "교토 정식(가이세키), 우지 말차", activity: "청수사(키요미즈데라), 아라시야마 대나무숲", externalMap: "https://maps.google.com/?q=Kyoto" },
+            { dayIndex: 6, dateLabel: "11/16 (월)", fullDate: "11월 16일 (월)", city: "고베", summary: "항구 도시 고베의 야경과 항만 해안도로 코스입니다.", food: "고베 규 스테이크, 아카시야키", activity: "메리켄 파크, 롯코산 야경 전망대", externalMap: "https://maps.google.com/?q=Kobe" },
+            { dayIndex: 7, dateLabel: "11/17 (화)", fullDate: "11월 17일 (화)", city: "오사카 (미식과 쇼핑)", summary: "도톤보리와 덴덴타운 중심의 자유 미식 투어 일정입니다.", food: "타코야키, 오코노미야키, 쿠시카츠", activity: "도톤보리 크루즈, 오사카성 산책", externalMap: "https://maps.google.com/?q=Osaka" },
+            { dayIndex: 8, dateLabel: "11/18 (수)", fullDate: "11월 18일 (수)", city: "오사카 / 귀국 준비", summary: "렌터카/바이크 반납 후 귀국을 준비하는 날입니다.", food: "공항 라멘, 간사이 공항 선물 쇼핑", activity: "면세점 쇼핑, 공항 라운지 휴식", externalMap: "https://maps.google.com/?q=Kansai+International+Airport" }
         ];
 
-        // Default Sample Schedule Items with Lat/Lng
+        // Sample Schedules
         const defaultSchedules = [
-            { id: 1, dayIndex: 1, startTime: "10:00", endTime: "11:30", title: "나고야 공항 도착 & 오토바이 인수", lat: "34.8583", lng: "136.8053", memo: "서류 및 렌트 바이크 점검" },
-            { id: 2, dayIndex: 1, startTime: "12:00", endTime: "13:30", title: "점심: 나고야 테바사키 맛집", lat: "35.1709", lng: "136.9076", memo: "주차 공간 사전 확인" },
-            { id: 3, dayIndex: 1, startTime: "14:30", endTime: "17:00", title: "스와호 호수 라이딩 이동", lat: "36.0474", lng: "138.0831", memo: "고속도로 톨게이트 전용 카드 챙기기" },
-            { id: 4, dayIndex: 2, startTime: "09:30", endTime: "12:00", title: "시즈오카 후지산 전망 도로 주행", lat: "35.3606", lng: "138.7274", memo: "안전 라이딩 수칙 준수" }
+            { id: 1, dayIndex: 1, startTime: "10:00", endTime: "11:30", title: "나고야 공항 도착 & 오토바이 인수", lat: 34.8583, lng: 136.8053, memo: "서류 및 렌트 바이크 점검" },
+            { id: 2, dayIndex: 1, startTime: "12:00", endTime: "13:30", title: "점심: 나고야 테바사키 맛집", lat: 35.1709, lng: 136.9076, memo: "주차 공간 사전 확인" },
+            { id: 3, dayIndex: 1, startTime: "14:30", endTime: "17:00", title: "스와호 호수 전망대 라이딩", lat: 36.0474, lng: 138.0831, memo: "나침반 버튼을 눌러 지도 위치를 확인하세요" },
+            { id: 4, dayIndex: 2, startTime: "09:30", endTime: "12:00", title: "시즈오카 후지산 전망 도로 주행", lat: 35.3606, lng: 138.7274, memo: "안전 라이딩 수칙 준수" }
         ];
 
-        // Default Sample Expenses
+        // Sample Expenses (KRW & JPY)
         const defaultExpenses = [
-            { id: 1, category: "숙소/항공", title: "1일차 스와호 온천 호텔", amountJpy: 18000 },
-            { id: 2, category: "교통/이동", title: "오토바이 주유비 (나고야)", amountJpy: 2500 },
-            { id: 3, category: "식사/간식", title: "나고야 점심 식사", amountJpy: 4200 }
+            { id: 1, currency: "KRW", category: "숙소/항공", title: "인천-나고야 항공권 (사전결제)", amount: 450000 },
+            { id: 2, currency: "KRW", category: "교통/이동", title: "오토바이 7일 렌트 예약금", amount: 620000 },
+            { id: 3, currency: "JPY", category: "숙소/항공", title: "1일차 스와호 온천 호텔 현지결제", amount: 18000 },
+            { id: 4, currency: "JPY", category: "교통/이동", title: "오토바이 주유비 (나고야)", amount: 2500 },
+            { id: 5, currency: "JPY", category: "식사/간식", title: "나고야 테바사키 점심 식사", amount: 4200 }
         ];
 
         // State Variables
-        let currentSelectedDay = 1;
-        let daysConfig = JSON.parse(localStorage.getItem('japan_trip_days_config')) || defaultDaysConfig;
+        let daysConfig = JSON.parse(localStorage.getItem('japan_days_config')) || defaultDaysConfig;
         let scheduleItems = JSON.parse(localStorage.getItem('japan_trip_schedules')) || defaultSchedules;
         let expenseItems = JSON.parse(localStorage.getItem('japan_trip_expenses')) || defaultExpenses;
+        let currentSelectedDay = 1;
 
-        let map, mapMarkersGroup;
+        let map, markersGroup;
 
-        // Initialization
+        // Init
         window.onload = function() {
-            initInteractiveMap();
+            initMap();
             renderDayTabs();
             renderDayInfo(1);
             renderScheduleList();
@@ -407,90 +450,74 @@
             setupForms();
         };
 
+        function saveData() {
+            localStorage.setItem('japan_days_config', JSON.stringify(daysConfig));
+            localStorage.setItem('japan_trip_schedules', JSON.stringify(scheduleItems));
+            localStorage.setItem('japan_trip_expenses', JSON.stringify(expenseItems));
+        }
+
         // Initialize Leaflet Map
-        function initInteractiveMap() {
-            map = L.map('interactiveMap').setView([36.0474, 138.0831], 10);
+        function initMap() {
+            map = L.map('map').setView([36.0474, 138.0831], 10);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
                 subdomains: 'abcd',
                 attribution: '&copy; OpenStreetMap &copy; CARTO'
             }).addTo(map);
 
-            mapMarkersGroup = L.layerGroup().addTo(map);
+            markersGroup = L.layerGroup().addTo(map);
+            updateMapMarkers();
         }
 
-        // Update Map Markers for Current Selected Day
         function updateMapMarkers() {
-            if (!map || !mapMarkersGroup) return;
-            mapMarkersGroup.clearLayers();
+            if (!map || !markersGroup) return;
+            markersGroup.clearLayers();
 
-            const currentDaySchedules = scheduleItems.filter(item => item.dayIndex === currentSelectedDay);
+            const currentDayItems = scheduleItems.filter(item => item.dayIndex === currentSelectedDay);
             const bounds = [];
 
-            currentDaySchedules.forEach((item, idx) => {
-                const lat = parseFloat(item.lat);
-                const lng = parseFloat(item.lng);
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const marker = L.marker([lat, lng])
-                        .bindPopup(`
-                            <div class="p-1">
-                                <b style="color:#0284c7; font-size:12px;">${idx + 1}. ${item.title}</b><br>
-                                <span style="font-size:11px; color:#475569;">⏰ ${item.startTime} ~ ${item.endTime}</span><br>
-                                ${item.memo ? `<span style="font-size:11px; color:#64748b;">📝 ${item.memo}</span>` : ''}
-                            </div>
-                        `);
-                    mapMarkersGroup.addLayer(marker);
-                    bounds.push([lat, lng]);
+            currentDayItems.forEach((item, idx) => {
+                if (item.lat && item.lng) {
+                    const latNum = parseFloat(item.lat);
+                    const lngNum = parseFloat(item.lng);
+                    if (!isNaN(latNum) && !isNaN(lngNum)) {
+                        const marker = L.marker([latNum, lngNum])
+                            .bindPopup(`<b>${idx + 1}. ${item.title}</b><br><span style="font-size:11px; color:#666;">${item.startTime} ~ ${item.endTime} | ${item.memo || ''}</span>`);
+                        markersGroup.addLayer(marker);
+                        bounds.push([latNum, lngNum]);
+                    }
                 }
             });
 
             if (bounds.length > 0) {
                 map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-            } else {
-                const config = daysConfig.find(d => d.dayIndex === currentSelectedDay);
-                if (config && config.defaultLat && config.defaultLng) {
-                    map.setView([config.defaultLat, config.defaultLng], 10);
+            }
+        }
+
+        function focusLocationOnMap(lat, lng, title) {
+            if (lat && lng) {
+                const latNum = parseFloat(lat);
+                const lngNum = parseFloat(lng);
+                if (!isNaN(latNum) && !isNaN(lngNum)) {
+                    map.setView([latNum, lngNum], 14, { animate: true });
+                    
+                    // Open popup for the matching marker
+                    markersGroup.eachLayer(layer => {
+                        const pos = layer.getLatLng();
+                        if (Math.abs(pos.lat - latNum) < 0.0001 && Math.abs(pos.lng - lngNum) < 0.0001) {
+                            layer.openPopup();
+                        }
+                    });
+
+                    document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    showToast(`지도 위치가 '${title}'(으)로 이동했습니다.`);
                 }
+            } else {
+                showToast("해당 장소의 위도/경도 정보가 설정되지 않았습니다.");
             }
         }
 
-        // Focus Map to Specific Lat/Lng via Compass Button 🧭
-        function focusMapLocation(latStr, lngStr, title, memo) {
-            const lat = parseFloat(latStr);
-            const lng = parseFloat(lngStr);
-
-            if (isNaN(lat) || isNaN(lng)) {
-                showToast("해당 장소의 위도/경도가 올바르게 입력되지 않았습니다.");
-                return;
-            }
-
-            // Scroll smoothly up to the map section
-            document.getElementById('interactiveMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            setTimeout(() => {
-                map.setView([lat, lng], 14, { animate: true });
-                // Find or create marker to open popup
-                L.popup()
-                    .setLatLng([lat, lng])
-                    .setContent(`
-                        <div class="p-1">
-                            <b style="color:#0284c7; font-size:13px;">🧭 ${title}</b><br>
-                            ${memo ? `<span style="font-size:11px; color:#475569;">📝 ${memo}</span>` : ''}
-                        </div>
-                    `)
-                    .openOn(map);
-                showToast(`지도에서 '${title}' 위치로 이동했습니다.`);
-            }, 300);
-        }
-
-        // Save state to LocalStorage
-        function saveData() {
-            localStorage.setItem('japan_trip_days_config', JSON.stringify(daysConfig));
-            localStorage.setItem('japan_trip_schedules', JSON.stringify(scheduleItems));
-            localStorage.setItem('japan_trip_expenses', JSON.stringify(expenseItems));
-        }
-
-        // Render Day Horizontal Scroll Tabs
+        // Render Tabs
         function renderDayTabs() {
             const tabsContainer = document.getElementById('dayTabs');
             const daySelect = document.getElementById('inputDayIndex');
@@ -503,7 +530,7 @@
             `).join('');
 
             daySelect.innerHTML = daysConfig.map(day => `
-                <option value="${day.dayIndex}">${day.dayIndex}일차 - ${day.dateLabel}</option>
+                <option value="${day.dayIndex}">${day.dayIndex}일차 : ${day.fullDate}</option>
             `).join('');
 
             updateActiveTabUI();
@@ -522,7 +549,6 @@
             });
         }
 
-        // Select Active Day
         function selectDay(dayIndex) {
             currentSelectedDay = dayIndex;
             updateActiveTabUI();
@@ -530,60 +556,22 @@
             renderScheduleList();
         }
 
-        // Render Day Information & Update Interactive Map
         function renderDayInfo(dayIndex) {
             const config = daysConfig.find(d => d.dayIndex === dayIndex);
             if (!config) return;
 
-            const fullDate = config.fullDateStr || config.dateLabel;
-            document.getElementById('currentDayHeader').innerText = `${config.dayIndex}일차 : ${fullDate}`;
+            document.getElementById('currentDayHeader').innerText = `${config.dayIndex}일차 : ${config.fullDate}`;
             document.getElementById('destCityName').innerText = config.city;
             document.getElementById('destSummary').innerText = config.summary;
             document.getElementById('destFoodText').innerText = config.food;
             document.getElementById('destActivityText').innerText = config.activity;
             document.getElementById('scheduleTableDateLabel').innerText = config.dateLabel;
-
             document.getElementById('googleMapExternalBtn').href = config.externalMap || '#';
 
             updateMapMarkers();
         }
 
-        // --- DIRECT EDITING DAY INFO MODAL FUNCTIONS ---
-        function openEditDayModal() {
-            const config = daysConfig.find(d => d.dayIndex === currentSelectedDay);
-            if (!config) return;
-
-            document.getElementById('modalDayTitle').innerText = `${config.dayIndex}일차 (${config.dateLabel}) 정보 수정하기`;
-            document.getElementById('editModalCity').value = config.city || "";
-            document.getElementById('editModalSummary').value = config.summary || "";
-            document.getElementById('editModalFood').value = config.food || "";
-            document.getElementById('editModalActivity').value = config.activity || "";
-            document.getElementById('editModalExternalMap').value = config.externalMap || "";
-
-            document.getElementById('editDayModal').classList.remove('hidden');
-        }
-
-        function closeEditDayModal() {
-            document.getElementById('editDayModal').classList.add('hidden');
-        }
-
-        function saveEditDayModal() {
-            const index = daysConfig.findIndex(d => d.dayIndex === currentSelectedDay);
-            if (index === -1) return;
-
-            daysConfig[index].city = document.getElementById('editModalCity').value;
-            daysConfig[index].summary = document.getElementById('editModalSummary').value;
-            daysConfig[index].food = document.getElementById('editModalFood').value;
-            daysConfig[index].activity = document.getElementById('editModalActivity').value;
-            daysConfig[index].externalMap = document.getElementById('editModalExternalMap').value;
-
-            saveData();
-            renderDayInfo(currentSelectedDay);
-            closeEditDayModal();
-            showToast(`${currentSelectedDay}일차 정보가 성공적으로 저장되었습니다! ✨`);
-        }
-
-        // Render Schedules for Current Day (Lat/Lng Hidden, Compass 🧭 Focus Button Added)
+        // Render Schedules (Latitude & Longitude hidden from view list)
         function renderScheduleList() {
             const container = document.getElementById('scheduleList');
             const filtered = scheduleItems.filter(item => item.dayIndex === currentSelectedDay);
@@ -591,7 +579,7 @@
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-6 text-slate-400 text-xs">
-                        등록된 일정이 없습니다. 위 '새 일정 항목 추가하기'를 눌러 일정을 입력해보세요!
+                        등록된 일정이 없습니다. 새 일정을 입력해보세요!
                     </div>
                 `;
                 return;
@@ -599,9 +587,7 @@
 
             filtered.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-            container.innerHTML = filtered.map((item, idx) => {
-                const hasLatLng = item.lat && item.lng && !isNaN(parseFloat(item.lat)) && !isNaN(parseFloat(item.lng));
-                return `
+            container.innerHTML = filtered.map((item, idx) => `
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between hover:border-sky-300 transition">
                     <div class="flex items-start space-x-3">
                         <span class="bg-sky-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
@@ -617,55 +603,54 @@
                             ${item.memo ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-regular fa-note-sticky mr-1"></i>${item.memo}</p>` : ''}
                         </div>
                     </div>
-                    <div class="flex items-center space-x-1 shrink-0">
-                        ${hasLatLng ? `
-                            <button onclick="focusMapLocation('${item.lat}', '${item.lng}', '${item.title.replace(/'/g, "\\'")}', '${(item.memo || '').replace(/'/g, "\\'")}')" 
-                                    class="bg-sky-50 text-sky-600 hover:bg-sky-100 p-1.5 rounded-lg text-xs font-bold flex items-center transition" 
+                    <div class="flex items-center space-x-1">
+                        ${(item.lat && item.lng) ? `
+                            <button onclick="focusLocationOnMap('${item.lat}', '${item.lng}', '${item.title}')" 
+                                    class="text-sky-600 hover:bg-sky-100 p-1.5 rounded-lg text-xs transition" 
                                     title="지도에서 장소 위치 보기">
-                                <span class="mr-1">🧭</span>
-                                <span class="text-[11px] hidden sm:inline">위치보기</span>
+                                <i class="fa-solid fa-compass text-base"></i>
                             </button>
                         ` : ''}
-                        <button onclick="editSchedule(${item.id})" class="text-slate-400 hover:text-sky-600 p-1.5 text-xs transition" title="수정">
+                        <button onclick="editScheduleItem(${item.id})" class="text-slate-400 hover:text-sky-600 p-1.5 rounded-lg text-xs transition" title="수정">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
-                        <button onclick="deleteSchedule(${item.id})" class="text-slate-300 hover:text-rose-500 p-1.5 text-xs transition" title="삭제">
+                        <button onclick="deleteSchedule(${item.id})" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg text-xs transition" title="삭제">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
                 </div>
-            `}).join('');
+            `).join('');
 
             updateMapMarkers();
         }
 
         // Edit Schedule Item
-        function editSchedule(id) {
+        function editScheduleItem(id) {
             const item = scheduleItems.find(i => i.id === id);
             if (!item) return;
 
-            document.getElementById('editingScheduleId').value = item.id;
+            document.getElementById('editingItemId').value = item.id;
             document.getElementById('inputDayIndex').value = item.dayIndex;
             document.getElementById('inputStartTime').value = item.startTime;
             document.getElementById('inputEndTime').value = item.endTime;
             document.getElementById('inputTitle').value = item.title;
-            document.getElementById('inputLat').value = item.lat || '';
-            document.getElementById('inputLng').value = item.lng || '';
-            document.getElementById('inputMemo').value = item.memo || '';
+            document.getElementById('inputLat').value = item.lat || "";
+            document.getElementById('inputLng').value = item.lng || "";
+            document.getElementById('inputMemo').value = item.memo || "";
 
-            document.getElementById('submitScheduleBtn').innerText = "일정 수정 완료";
-            document.getElementById('cancelEditScheduleBtn').classList.remove('hidden');
+            document.getElementById('submitBtn').innerText = "수정 완료";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
 
-            const form = document.getElementById('addScheduleForm');
+            const form = document.getElementById('scheduleForm');
             if (form.classList.contains('hidden')) toggleForm();
             form.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function cancelScheduleEdit() {
-            document.getElementById('addScheduleForm').reset();
-            document.getElementById('editingScheduleId').value = "";
-            document.getElementById('submitScheduleBtn').innerText = "일정 등록";
-            document.getElementById('cancelEditScheduleBtn').classList.add('hidden');
+        function cancelEdit() {
+            document.getElementById('scheduleForm').reset();
+            document.getElementById('editingItemId').value = "";
+            document.getElementById('submitBtn').innerText = "일정 등록";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
         }
 
         function deleteSchedule(id) {
@@ -675,32 +660,47 @@
             showToast("일정이 삭제되었습니다.");
         }
 
-        // Render Expenses & JPY -> KRW Calculations
+        // Render Separate KRW & JPY Expenses
         function renderExpenseList() {
             const container = document.getElementById('expenseList');
-            let totalJpy = 0;
-            let catSums = { "숙소/항공": 0, "교통/이동": 0, "식사/간식": 0, "관람/체험": 0, "쇼핑/기타": 0 };
+
+            let krwTotal = 0, jpyTotal = 0;
+            let krwCat = { "숙소/항공": 0, "교통/이동": 0, "기타": 0 };
+            let jpyCat = { "식사/간식": 0, "관람/체험": 0, "쇼핑/기타": 0 };
 
             expenseItems.forEach(item => {
-                const amt = Number(item.amountJpy);
-                totalJpy += amt;
-                if (catSums[item.category] !== undefined) {
-                    catSums[item.category] += amt;
+                const amt = Number(item.amount);
+                if (item.currency === "KRW") {
+                    krwTotal += amt;
+                    if (krwCat[item.category] !== undefined) krwCat[item.category] += amt;
+                    else krwCat["기타"] += amt;
                 } else {
-                    catSums["쇼핑/기타"] += amt;
+                    jpyTotal += amt;
+                    if (jpyCat[item.category] !== undefined) jpyCat[item.category] += amt;
+                    else jpyCat["쇼핑/기타"] += amt;
                 }
             });
 
-            const totalKrw = Math.round(totalJpy * EXCHANGE_RATE);
+            const jpyConvertedKrw = Math.round(jpyTotal * EXCHANGE_RATE);
 
-            document.getElementById('totalJpyDisplay').innerText = `¥ ${totalJpy.toLocaleString()}`;
-            document.getElementById('totalKrwDisplay').innerText = `(${totalKrw.toLocaleString()} 원)`;
+            // KRW Displays
+            document.getElementById('totalKrwSum').innerText = `₩ ${krwTotal.toLocaleString()}`;
+            document.getElementById('krwCatStay').innerText = `₩${krwCat["숙소/항공"].toLocaleString()}`;
+            document.getElementById('krwCatTransport').innerText = `₩${krwCat["교통/이동"].toLocaleString()}`;
+            document.getElementById('krwCatEtc').innerText = `₩${krwCat["기타"].toLocaleString()}`;
+            const krwPercent = Math.min(Math.round((krwTotal / TARGET_KRW_BUDGET) * 100), 100);
+            document.getElementById('krwBar').style.width = `${krwPercent}%`;
+            document.getElementById('krwBarPercent').innerText = `${krwPercent}%`;
 
-            document.getElementById('catStay').innerText = `¥${catSums["숙소/항공"].toLocaleString()}`;
-            document.getElementById('catTransport').innerText = `¥${catSums["교통/이동"].toLocaleString()}`;
-            document.getElementById('catFood').innerText = `¥${catSums["식사/간식"].toLocaleString()}`;
-            document.getElementById('catActivity').innerText = `¥${catSums["관람/체험"].toLocaleString()}`;
-            document.getElementById('catEtc').innerText = `¥${catSums["쇼핑/기타"].toLocaleString()}`;
+            // JPY Displays
+            document.getElementById('totalJpySum').innerText = `¥ ${jpyTotal.toLocaleString()}`;
+            document.getElementById('totalJpyConverted').innerText = `(${jpyConvertedKrw.toLocaleString()}원)`;
+            document.getElementById('jpyCatFood').innerText = `¥${jpyCat["식사/간식"].toLocaleString()}`;
+            document.getElementById('jpyCatActivity').innerText = `¥${jpyCat["관람/체험"].toLocaleString()}`;
+            document.getElementById('jpyCatEtc').innerText = `¥${jpyCat["쇼핑/기타"].toLocaleString()}`;
+            const jpyPercent = Math.min(Math.round((jpyTotal / TARGET_JPY_BUDGET) * 100), 100);
+            document.getElementById('jpyBar').style.width = `${jpyPercent}%`;
+            document.getElementById('jpyBarPercent').innerText = `${jpyPercent}%`;
 
             if (expenseItems.length === 0) {
                 container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">등록된 지출 내역이 없습니다.</p>`;
@@ -708,17 +708,22 @@
             }
 
             container.innerHTML = expenseItems.map(item => {
-                const krwVal = Math.round(Number(item.amountJpy) * EXCHANGE_RATE);
+                const isKrw = item.currency === "KRW";
+                const displayVal = isKrw 
+                    ? `₩ ${Number(item.amount).toLocaleString()}` 
+                    : `¥ ${Number(item.amount).toLocaleString()} <span class="text-[10px] text-sky-600 block">(${Math.round(item.amount * EXCHANGE_RATE).toLocaleString()}원)</span>`;
+
                 return `
                     <div class="py-2.5 flex justify-between items-center text-xs">
                         <div>
                             <span class="font-bold text-slate-800">${item.title}</span>
-                            <span class="text-[10px] text-slate-500 bg-slate-100 border px-1.5 py-0.5 rounded ml-1.5">${item.category}</span>
+                            <span class="text-[10px] ${isKrw ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'} border px-1.5 py-0.5 rounded ml-1 font-semibold">
+                                ${item.currency} | ${item.category}
+                            </span>
                         </div>
                         <div class="flex items-center space-x-3">
-                            <div class="text-right">
-                                <span class="font-bold text-slate-800 block">¥ ${Number(item.amountJpy).toLocaleString()}</span>
-                                <span class="text-[10px] text-sky-600">(${krwVal.toLocaleString()} 원)</span>
+                            <div class="text-right font-bold text-slate-800">
+                                ${displayVal}
                             </div>
                             <button onclick="deleteExpense(${item.id})" class="text-slate-300 hover:text-rose-500 transition">
                                 <i class="fa-solid fa-xmark"></i>
@@ -736,11 +741,11 @@
             showToast("지출 내역이 삭제되었습니다.");
         }
 
-        // Setup Forms & Event Handlers
+        // Setup Forms
         function setupForms() {
-            document.getElementById('addScheduleForm').addEventListener('submit', function(e) {
+            document.getElementById('scheduleForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                const editingId = document.getElementById('editingScheduleId').value;
+                const editingId = document.getElementById('editingItemId').value;
                 const dayIndex = Number(document.getElementById('inputDayIndex').value);
                 const startTime = document.getElementById('inputStartTime').value;
                 const endTime = document.getElementById('inputEndTime').value;
@@ -753,7 +758,7 @@
                     const idx = scheduleItems.findIndex(i => i.id == editingId);
                     if (idx !== -1) {
                         scheduleItems[idx] = { id: Number(editingId), dayIndex, startTime, endTime, title, lat, lng, memo };
-                        showToast("일정이 수정되었습니다!");
+                        showToast("일정이 수정되었습니다.");
                     }
                 } else {
                     scheduleItems.push({ id: Date.now(), dayIndex, startTime, endTime, title, lat, lng, memo });
@@ -762,25 +767,61 @@
 
                 saveData();
                 selectDay(dayIndex);
-                cancelScheduleEdit();
+                cancelEdit();
                 toggleForm();
             });
 
             document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+                const currency = document.getElementById('expCurrency').value;
                 const category = document.getElementById('expCategory').value;
                 const title = document.getElementById('expTitle').value;
-                const amountJpy = Number(document.getElementById('expAmountJpy').value);
+                const amount = Number(document.getElementById('expAmount').value);
 
-                expenseItems.push({ id: Date.now(), category, title, amountJpy });
+                expenseItems.push({ id: Date.now(), currency, category, title, amount });
                 saveData();
                 renderExpenseList();
                 this.reset();
-                showToast("지출 내역이 추가되었습니다.");
+                showToast("지출 내역이 등록되었습니다.");
             });
         }
 
-        // UI Helpers
+        // Destination Info Editing Modal Handlers
+        function openInfoEditModal() {
+            const config = daysConfig.find(d => d.dayIndex === currentSelectedDay);
+            if (!config) return;
+
+            document.getElementById('modalDayTitle').innerText = `${config.dayIndex}일차 (${config.dateLabel}) 소개 정보 수정`;
+            document.getElementById('editCityName').value = config.city;
+            document.getElementById('editSummary').value = config.summary;
+            document.getElementById('editFood').value = config.food;
+            document.getElementById('editActivity').value = config.activity;
+            document.getElementById('editExternalMap').value = config.externalMap || "";
+
+            document.getElementById('infoEditModal').classList.remove('hidden');
+        }
+
+        function closeInfoEditModal() {
+            document.getElementById('infoEditModal').classList.add('hidden');
+        }
+
+        function saveDayInfo() {
+            const config = daysConfig.find(d => d.dayIndex === currentSelectedDay);
+            if (config) {
+                config.city = document.getElementById('editCityName').value;
+                config.summary = document.getElementById('editSummary').value;
+                config.food = document.getElementById('editFood').value;
+                config.activity = document.getElementById('editActivity').value;
+                config.externalMap = document.getElementById('editExternalMap').value;
+
+                saveData();
+                renderDayInfo(currentSelectedDay);
+                closeInfoEditModal();
+                showToast("오늘의 여행지 소개 정보가 수정되었습니다.");
+            }
+        }
+
+        // Tab & UI Helpers
         function switchTab(tab) {
             const schedSection = document.getElementById('tabSchedule');
             const expSection = document.getElementById('tabExpense');
@@ -802,7 +843,7 @@
         }
 
         function toggleForm() {
-            const form = document.getElementById('addScheduleForm');
+            const form = document.getElementById('scheduleForm');
             const icon = document.getElementById('formIcon');
             form.classList.toggle('hidden');
             icon.classList.toggle('rotate-180');
