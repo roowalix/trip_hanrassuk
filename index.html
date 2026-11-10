@@ -394,9 +394,9 @@
         <span id="toastMsg">알림</span>
     </div>
 
-    <!-- JavaScript Logic with Firebase Realtime Sync & Korean Map Tiles -->
+    <!-- JavaScript Logic with Firebase & Simple OpenStreetMap Tiles -->
     <script>
-        // Firebase 설정
+        // Firebase 설정 (본인 설정값 유지됨)
         const firebaseConfig = {
             apiKey: "AIzaSyBvwj83Kgr-QDzio6FZwt1sGktkeCq97dM",
             authDomain: "trip-hanrassuk.firebaseapp.com",
@@ -455,7 +455,7 @@
             loadDataFromFirebase();
         };
 
-        // Firebase 데이터 실시간 구독
+        // Firebase 데이터 실시간 구독 (서버 연동 유지)
         function loadDataFromFirebase() {
             db.collection("trip_schedules").onSnapshot((snapshot) => {
                 if (snapshot.empty && scheduleItems.length === 0) {
@@ -500,25 +500,21 @@
             db.collection("trip_config").doc("daysConfig").set({ list: daysConfig });
         }
 
-        // Initialize Leaflet Map with Korean Language Tile Server (한글 지명 지원)
+        // Initialize Leaflet Map (API 키 필요 없는 깔끔한 기본 지도 타일)
         function initMap() {
             map = L.map('map').setView([36.0474, 138.0831], 10);
             
-            // Initialize Leaflet Map (한글 지명 지원 및 무료 타일)
-function initMap() {
-    map = L.map('map').setView([36.0474, 138.0831], 10);
-    
-    // API 키가 필요 없는 안정적인 오픈스트리트맵 기반 한글 지명 지원 타일
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+            // API 키 에러가 나지 않는 표준 오픈스트리트맵 타일
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-    markersGroup = L.layerGroup().addTo(map);
-    updateMapMarkers();
-    
-    setTimeout(() => { map.invalidateSize(); }, 300);
-}
+            markersGroup = L.layerGroup().addTo(map);
+            updateMapMarkers();
+            
+            setTimeout(() => { map.invalidateSize(); }, 300);
+        }
 
         function updateMapMarkers() {
             if (!map || !markersGroup) return;
