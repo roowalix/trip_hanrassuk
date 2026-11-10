@@ -504,18 +504,21 @@
         function initMap() {
             map = L.map('map').setView([36.0474, 138.0831], 10);
             
-            // 한글 지명이 렌더링되는 CartoDB 뷜더 타일 적용
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                maxZoom: 20,
-                subdomains: 'abcd',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            }).addTo(map);
+            // Initialize Leaflet Map (한글 지명 지원 및 무료 타일)
+function initMap() {
+    map = L.map('map').setView([36.0474, 138.0831], 10);
+    
+    // API 키가 필요 없는 안정적인 오픈스트리트맵 기반 한글 지명 지원 타일
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-            markersGroup = L.layerGroup().addTo(map);
-            updateMapMarkers();
-            
-            setTimeout(() => { map.invalidateSize(); }, 300);
-        }
+    markersGroup = L.layerGroup().addTo(map);
+    updateMapMarkers();
+    
+    setTimeout(() => { map.invalidateSize(); }, 300);
+}
 
         function updateMapMarkers() {
             if (!map || !markersGroup) return;
