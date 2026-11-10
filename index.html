@@ -504,11 +504,7 @@
         function initMap() {
             map = L.map('map').setView([36.0474, 138.0831], 10);
             
-// 한글 지명이 지원되는 위키미디어 지도 타일로 교체
-    L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia</a>'
-    }).addTo(map);
+
 
             markersGroup = L.layerGroup().addTo(map);
             updateMapMarkers();
