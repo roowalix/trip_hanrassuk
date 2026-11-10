@@ -504,11 +504,11 @@
         function initMap() {
             map = L.map('map').setView([36.0474, 138.0831], 10);
             
-            // API 키 에러가 나지 않는 표준 오픈스트리트맵 타일
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+// 한글 지명이 지원되는 위키미디어 지도 타일로 교체
+    L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia</a>'
+    }).addTo(map);
 
             markersGroup = L.layerGroup().addTo(map);
             updateMapMarkers();
