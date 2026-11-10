@@ -19,7 +19,6 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .tab-active { color: #0284c7; border-bottom: 3px solid #0284c7; font-weight: 800; }
         .day-active { background-color: #0284c7 !important; color: #ffffff !important; font-weight: 700; }
-        /* 지도 컨테이너 높이 및 크기 확장 */
         #map { z-index: 10; width: 100%; height: 380px; min-height: 380px; }
     </style>
 </head>
@@ -117,7 +116,7 @@
             </div>
         </section>
 
-        <!-- Expanded Map Section (프레임 꽉 차게 확장) -->
+        <!-- Expanded Map Section -->
         <section class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200 space-y-2.5">
             <div class="flex justify-between items-center px-1">
                 <div class="flex items-center space-x-2">
@@ -204,7 +203,7 @@
                 </form>
             </div>
 
-            <!-- Schedule Cards -->
+            <!-- Schedule Cards (시간 위, 장소명 아래 배치) -->
             <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-3">
                 <div class="flex justify-between items-center border-b pb-2">
                     <h3 class="font-extrabold text-slate-900 text-xs">
@@ -306,8 +305,8 @@
                         <div>
                             <label class="text-slate-600 font-bold block mb-1">결제 화폐</label>
                             <select id="expCurrency" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-bold">
-                                <option value="KRW">원화 (₩ KRW)</option>
-                                <option value="JPY">엔화 (¥ JPY)</option>
+                                <option value="KRW">원화 (￦ KRW)</option>
+                                <option value="JPY">엔화 (￥ JPY)</option>
                             </select>
                         </div>
                         <div>
@@ -335,7 +334,7 @@
                 </form>
             </div>
 
-            <!-- Expense List -->
+            <!-- Expense List (카테고리 먼저, 기호 ￦, ￥ 적용) -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                 <h3 class="font-extrabold text-xs text-slate-900 mb-3 border-b pb-2">전체 지출 내역</h3>
                 <div id="expenseList" class="divide-y divide-slate-100">
@@ -451,16 +450,14 @@
         // Initialize Leaflet Map
         function initMap() {
             map = L.map('map').setView([36.0474, 138.0831], 10);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                subdomains: 'abcd',
-                attribution: '&copy; OpenStreetMap &copy; CARTO'
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
             markersGroup = L.layerGroup().addTo(map);
             updateMapMarkers();
             
-            // 깃허브 페이지 및 모바일 환경에서 렌더링 오류 방지용 강제 리프레시
             setTimeout(() => { map.invalidateSize(); }, 300);
         }
 
@@ -566,6 +563,7 @@
             updateMapMarkers();
         }
 
+        // 일정 목록 렌더링 (시간 위, 장소명 아래 세로 배치)
         function renderScheduleList() {
             const container = document.getElementById('scheduleList');
             const filtered = scheduleItems.filter(item => item.dayIndex === currentSelectedDay);
@@ -583,21 +581,25 @@
 
             container.innerHTML = filtered.map((item, idx) => `
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between hover:border-sky-300 transition">
-                    <div class="flex items-start space-x-3">
+                    <div class="flex items-start space-x-3 w-full pr-2">
                         <span class="bg-sky-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                             ${idx + 1}
                         </span>
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-semibold text-[11px]">
+                        <div class="w-full space-y-1.5">
+                            <!-- 시간 (위) -->
+                            <div>
+                                <span class="bg-sky-100 text-sky-800 px-2.5 py-1 rounded-lg font-bold text-[11px] inline-flex items-center">
                                     <i class="fa-regular fa-clock mr-1"></i>${item.startTime} ~ ${item.endTime}
                                 </span>
-                                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">${item.title}</h4>
                             </div>
-                            ${item.memo ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-regular fa-note-sticky mr-1"></i>${item.memo}</p>` : ''}
+                            <!-- 장소명 / 일정 제목 (아래) -->
+                            <div>
+                                <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug">${item.title}</h4>
+                            </div>
+                            ${item.memo ? `<p class="text-[11px] text-slate-500 font-medium"><i class="fa-regular fa-note-sticky mr-1"></i>${item.memo}</p>` : ''}
                         </div>
                     </div>
-                    <div class="flex items-center space-x-1 shrink-0">
+                    <div class="flex items-center space-x-1 shrink-0 pt-0.5">
                         ${(item.lat && item.lng) ? `
                             <button onclick="focusLocationOnMap('${item.lat}', '${item.lng}', '${item.title}')" 
                                     class="text-sky-600 hover:bg-sky-100 p-1.5 rounded-lg text-xs transition" 
@@ -653,6 +655,7 @@
             showToast("일정이 삭제되었습니다.");
         }
 
+        // 지출 목록 렌더링 (카테고리 먼저 배치, ￦ ￥ 기호 적용)
         function renderExpenseList() {
             const container = document.getElementById('expenseList');
 
@@ -699,24 +702,30 @@
 
             container.innerHTML = expenseItems.map(item => {
                 const isKrw = item.currency === "KRW";
+                const currencySymbol = isKrw ? "￦" : "￥";
                 const displayVal = isKrw 
                     ? `₩ ${Number(item.amount).toLocaleString()}` 
                     : `¥ ${Number(item.amount).toLocaleString()} <span class="text-[10px] text-sky-600 block">(${Math.round(item.amount * EXCHANGE_RATE).toLocaleString()}원)</span>`;
 
                 return `
-                    <div class="py-2.5 flex justify-between items-center text-xs">
-                        <div>
-                            <span class="font-bold text-slate-800">${item.title}</span>
-                            <span class="text-[10px] ${isKrw ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'} border px-1.5 py-0.5 rounded ml-1 font-semibold">
-                                ${item.currency} | ${item.category}
-                            </span>
+                    <div class="py-3 flex justify-between items-center text-xs">
+                        <div class="space-y-1 pr-2">
+                            <!-- 카테고리를 먼저 배치하고 ￦, ￥ 기호 적용 -->
+                            <div>
+                                <span class="${isKrw ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'} border px-2 py-0.5 rounded-md font-bold text-[11px] inline-block">
+                                    ${currencySymbol} | ${item.category}
+                                </span>
+                            </div>
+                            <div class="font-bold text-slate-900 text-sm">
+                                ${item.title}
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <div class="text-right font-bold text-slate-800">
+                        <div class="flex items-center space-x-3 shrink-0">
+                            <div class="text-right font-extrabold text-slate-900 text-sm">
                                 ${displayVal}
                             </div>
-                            <button onclick="deleteExpense(${item.id})" class="text-slate-300 hover:text-rose-500 transition">
-                                <i class="fa-solid fa-xmark"></i>
+                            <button onclick="deleteExpense(${item.id})" class="text-slate-300 hover:text-rose-500 p-1 transition">
+                                <i class="fa-solid fa-xmark text-sm"></i>
                             </button>
                         </div>
                     </div>
