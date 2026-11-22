@@ -484,7 +484,7 @@
         const db = firebase.firestore();
 
         // ============================================================
-        // 2026 일본 여행 설정 영역
+        // 새 여행 설정 영역 (필요에 따라 여행별 값으로 수정하세요)
         // ============================================================
         const TRIP_META = {
             storagePrefix: "trip_hanrassuk_2026", // 기존 일본 여행 2026 로컬 캐시 키
@@ -502,21 +502,17 @@
         };
 
         const EXCHANGE_RATE = 8.50; // 1 JPY = 8.50 KRW
-        const TARGET_KRW_BUDGET = 0; // 필요시 원화 목표 예산 입력
-        const TARGET_JPY_BUDGET = 0; // 필요시 엔화 목표 예산 입력
+        const TARGET_KRW_BUDGET = 2000000; // 원화 목표 예산: 200만원
+        const TARGET_JPY_BUDGET = 200000; // 엔화 목표 예산: 20만엔
 
-        // 일차 탭 구성 (Firestore config에 저장된 값이 있으면 우선 반영됨)
+        // 일차 탭 구성 (원하는 일차 수/날짜에 맞게 수정 가능)
         const defaultDaysConfig = [
-            { dayIndex: 1, dateLabel: "1일차", fullDate: "2026.11.11", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
-            { dayIndex: 2, dateLabel: "2일차", fullDate: "2026.11.12", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
-            { dayIndex: 3, dateLabel: "3일차", fullDate: "2026.11.13", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
-            { dayIndex: 4, dateLabel: "4일차", fullDate: "2026.11.14", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
-            { dayIndex: 5, dateLabel: "5일차", fullDate: "2026.11.15", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
-            { dayIndex: 6, dateLabel: "6일차", fullDate: "2026.11.16", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
-            { dayIndex: 7, dateLabel: "7일차", fullDate: "2026.11.17", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
-            { dayIndex: 8, dateLabel: "8일차", fullDate: "2026.11.18", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" }
+            { dayIndex: 1, dateLabel: "1일차", fullDate: "1일차", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
+            { dayIndex: 2, dateLabel: "2일차", fullDate: "2일차", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" },
+            { dayIndex: 3, dateLabel: "3일차", fullDate: "3일차", city: "", summary: "", food: "", activity: "", externalMap: "https://maps.google.com" }
         ];
 
+        // 빈 상태로 시작 (등록 시 Firebase에 저장됨)
         const defaultSchedules = [];
         const defaultExpenses = [];
         // ============================================================
