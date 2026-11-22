@@ -375,17 +375,44 @@
                 </form>
             </div>
 
-            <!-- Expense List with Sorting -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <div class="flex justify-between items-center mb-3 border-b pb-2.5 gap-2">
+            <!-- Expense List with Filter & Sorting -->
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+                <div class="flex justify-between items-center border-b pb-2 gap-2">
                     <h3 class="font-extrabold text-xs text-slate-900 shrink-0">전체 지출 내역</h3>
-                    <select id="expSortBy" onchange="renderExpenseList()" class="text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-sky-500">
-                        <option value="date_asc">지출일순 (오름차순)</option>
-                        <option value="date_desc">지출일순 (내림차순)</option>
-                        <option value="category">카테고리별</option>
-                        <option value="amount_desc">금액 높은순 (원화 환산)</option>
+                    <span id="filteredExpenseCount" class="text-[11px] text-slate-500 font-bold">0건</span>
+                </div>
+
+                <!-- Filters: 날짜 & 카테고리 -->
+                <div class="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                        <label class="text-slate-500 font-bold block mb-1">날짜 필터</label>
+                        <select id="expFilterDate" onchange="renderExpenseList()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="ALL">전체 날짜</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-slate-500 font-bold block mb-1">카테고리 필터</label>
+                        <select id="expFilterCategory" onchange="renderExpenseList()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="ALL">전체 카테고리</option>
+                            <option value="숙소/항공">숙소/항공</option>
+                            <option value="교통/이동">교통/이동</option>
+                            <option value="식사/간식">식사/간식</option>
+                            <option value="관람/체험">관람/체험</option>
+                            <option value="쇼핑/기타">쇼핑/기타</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Sort: 지출일 내림차순 / 지출일 오름차순 / 지출금액(원화)순 -->
+                <div class="text-[11px]">
+                    <label class="text-slate-500 font-bold block mb-1">정렬 기준</label>
+                    <select id="expSortBy" onchange="renderExpenseList()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="date_desc">지출일 내림차순 (최신순)</option>
+                        <option value="date_asc">지출일 오름차순 (과거순)</option>
+                        <option value="amount_desc">지출금액(원화)순 (높은순)</option>
                     </select>
                 </div>
+
                 <div id="expenseList" class="divide-y divide-slate-100">
                     <!-- Dynamic rendering -->
                 </div>
@@ -457,12 +484,38 @@
         const TARGET_KRW_BUDGET = 2500000; // 원화 목표: 250만 원
         const TARGET_JPY_BUDGET = 200000;  // 엔화 목표: 20만 엔
 
+        // 5개 카테고리 고유 색상
         const CATEGORIES = [
-            { name: "숙소/항공", color: "bg-blue-600", badge: "text-blue-700" },
-            { name: "교통/이동", color: "bg-sky-500", badge: "text-sky-700" },
-            { name: "식사/간식", color: "bg-amber-500", badge: "text-amber-700" },
-            { name: "관람/체험", color: "bg-purple-500", badge: "text-purple-700" },
-            { name: "쇼핑/기타", color: "bg-emerald-500", badge: "text-emerald-700" }
+            {
+                name: "숙소/항공",
+                barColor: "bg-blue-600",
+                percentText: "text-blue-700",
+                badgeClass: "bg-blue-100 text-blue-800 border-blue-200"
+            },
+            {
+                name: "교통/이동",
+                barColor: "bg-cyan-500",
+                percentText: "text-cyan-700",
+                badgeClass: "bg-cyan-100 text-cyan-800 border-cyan-200"
+            },
+            {
+                name: "식사/간식",
+                barColor: "bg-amber-500",
+                percentText: "text-amber-700",
+                badgeClass: "bg-amber-100 text-amber-800 border-amber-200"
+            },
+            {
+                name: "관람/체험",
+                barColor: "bg-violet-600",
+                percentText: "text-violet-700",
+                badgeClass: "bg-violet-100 text-violet-800 border-violet-200"
+            },
+            {
+                name: "쇼핑/기타",
+                barColor: "bg-emerald-600",
+                percentText: "text-emerald-700",
+                badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200"
+            }
         ];
 
         const defaultDaysConfig = [
@@ -504,6 +557,23 @@
             loadDataFromFirebase();
         };
 
+        function mergeDaysConfig(remoteList) {
+            if (!Array.isArray(remoteList) || remoteList.length === 0) return defaultDaysConfig;
+            return defaultDaysConfig.map(defDay => {
+                const found = remoteList.find(d => Number(d.dayIndex) === Number(defDay.dayIndex));
+                if (!found) return defDay;
+                return {
+                    ...defDay,
+                    ...found,
+                    city: (found.city && String(found.city).trim()) || defDay.city,
+                    summary: (found.summary && String(found.summary).trim()) || defDay.summary,
+                    food: (found.food && String(found.food).trim()) || defDay.food,
+                    activity: (found.activity && String(found.activity).trim()) || defDay.activity,
+                    externalMap: (found.externalMap && String(found.externalMap).trim()) || defDay.externalMap
+                };
+            });
+        }
+
         function loadDataFromFirebase() {
             db.collection("trip_schedules").onSnapshot((snapshot) => {
                 if (snapshot.empty && scheduleItems.length === 0) {
@@ -529,22 +599,27 @@
                     snapshot.forEach((doc) => {
                         expenseItems.push(doc.data());
                     });
+                    syncDateFilterOptions();
                     renderExpenseList();
                 }
             });
 
-            db.collection("trip_config").doc("daysConfig").get().then((doc) => {
-                if (doc.exists) {
-                    daysConfig = doc.data().list;
+            db.collection("trip_config").doc("daysConfig").onSnapshot((doc) => {
+                if (doc.exists && Array.isArray(doc.data().list)) {
+                    daysConfig = mergeDaysConfig(doc.data().list);
+                    localStorage.setItem('japan_days_config', JSON.stringify(daysConfig));
                     renderDayTabs();
                     renderDayInfo(currentSelectedDay);
                 } else {
-                    db.collection("trip_config").doc("daysConfig").set({ list: defaultDaysConfig });
+                    daysConfig = mergeDaysConfig(daysConfig);
+                    localStorage.setItem('japan_days_config', JSON.stringify(daysConfig));
+                    db.collection("trip_config").doc("daysConfig").set({ list: daysConfig });
                 }
             });
         }
 
         function saveConfigToFirebase() {
+            localStorage.setItem('japan_days_config', JSON.stringify(daysConfig));
             db.collection("trip_config").doc("daysConfig").set({ list: daysConfig });
         }
 
@@ -654,14 +729,14 @@
         }
 
         function renderDayInfo(dayIndex) {
-            const config = daysConfig.find(d => d.dayIndex === dayIndex);
+            const config = daysConfig.find(d => Number(d.dayIndex) === Number(dayIndex));
             if (!config) return;
 
             document.getElementById('currentDayHeader').innerText = `${config.dayIndex}일차 : ${config.fullDate}`;
-            document.getElementById('destCityName').innerText = config.city;
-            document.getElementById('destSummary').innerText = config.summary;
-            document.getElementById('destFoodText').innerText = config.food;
-            document.getElementById('destActivityText').innerText = config.activity;
+            document.getElementById('destCityName').innerText = config.city || "";
+            document.getElementById('destSummary').innerText = config.summary || "";
+            document.getElementById('destFoodText').innerText = config.food || "";
+            document.getElementById('destActivityText').innerText = config.activity || "";
             document.getElementById('scheduleTableDateLabel').innerText = config.dateLabel;
             document.getElementById('googleMapExternalBtn').href = config.externalMap || '#';
 
@@ -670,7 +745,7 @@
 
         function renderScheduleList() {
             const container = document.getElementById('scheduleList');
-            const filtered = scheduleItems.filter(item => item.dayIndex === currentSelectedDay);
+            const filtered = scheduleItems.filter(item => Number(item.dayIndex) === Number(currentSelectedDay));
 
             if (filtered.length === 0) {
                 container.innerHTML = `
@@ -681,7 +756,7 @@
                 return;
             }
 
-            filtered.sort((a, b) => a.startTime.localeCompare(b.startTime));
+            filtered.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
 
             container.innerHTML = filtered.map((item, idx) => `
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between hover:border-sky-300 transition">
@@ -723,7 +798,7 @@
         }
 
         function editScheduleItem(id) {
-            const item = scheduleItems.find(i => i.id === id);
+            const item = scheduleItems.find(i => Number(i.id) === Number(id));
             if (!item) return;
 
             document.getElementById('editingItemId').value = item.id;
@@ -756,9 +831,8 @@
             });
         }
 
-        function getCategoryOrder(catName) {
-            const idx = CATEGORIES.findIndex(c => c.name === catName);
-            return idx === -1 ? 999 : idx;
+        function getCategoryStyle(catName) {
+            return CATEGORIES.find(c => c.name === catName) || CATEGORIES[4];
         }
 
         function getConvertedKrwAmount(item) {
@@ -766,10 +840,32 @@
             return item.currency === "KRW" ? amt : Math.round(amt * EXCHANGE_RATE);
         }
 
+        function syncDateFilterOptions() {
+            const dateSelect = document.getElementById('expFilterDate');
+            if (!dateSelect) return;
+            const prevValue = dateSelect.value;
+
+            const uniqueDates = Array.from(new Set(
+                expenseItems.map(item => item.date || "2026-11-11")
+            )).sort((a, b) => a.localeCompare(b));
+
+            dateSelect.innerHTML = `<option value="ALL">전체 날짜</option>` + uniqueDates.map(d => `
+                <option value="${d}">${d}</option>
+            `).join('');
+
+            if (prevValue === "ALL" || uniqueDates.includes(prevValue)) {
+                dateSelect.value = prevValue;
+            } else {
+                dateSelect.value = "ALL";
+            }
+        }
+
         function renderExpenseList() {
             const container = document.getElementById('expenseList');
             const chartContainer = document.getElementById('categoryBreakdownChart');
-            const sortBy = document.getElementById('expSortBy')?.value || "date_asc";
+            const sortBy = document.getElementById('expSortBy')?.value || "date_desc";
+            const filterDate = document.getElementById('expFilterDate')?.value || "ALL";
+            const filterCategory = document.getElementById('expFilterCategory')?.value || "ALL";
 
             let krwTotal = 0, jpyTotal = 0;
             let krwCat = { "숙소/항공": 0, "교통/이동": 0, "기타": 0 };
@@ -852,36 +948,45 @@
                             <span class="font-bold text-slate-800">${cat.name}</span>
                             <div class="text-right">
                                 <span class="font-extrabold text-slate-900">${amountLabel}</span>
-                                <span class="font-extrabold ${cat.badge} ml-1.5">(${sharePercent}%)</span>
+                                <span class="font-extrabold ${cat.percentText} ml-1.5">(${sharePercent}%)</span>
                             </div>
                         </div>
                         <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                            <div class="${cat.color} h-2.5 rounded-full transition-all duration-500" style="width: ${sharePercent}%"></div>
+                            <div class="${cat.barColor} h-2.5 rounded-full transition-all duration-500" style="width: ${sharePercent}%"></div>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            if (expenseItems.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">등록된 지출 내역이 없습니다.</p>`;
+            // 필터 적용
+            const filteredItems = expenseItems.filter(item => {
+                const itemDate = item.date || "2026-11-11";
+                const itemCat = item.category || "쇼핑/기타";
+                const matchDate = (filterDate === "ALL") || (itemDate === filterDate);
+                const matchCat = (filterCategory === "ALL") || (itemCat === filterCategory);
+                return matchDate && matchCat;
+            });
+
+            document.getElementById('filteredExpenseCount').innerText = `${filteredItems.length}건`;
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">조건에 맞는 지출 내역이 없습니다.</p>`;
                 return;
             }
 
-            const sortedItems = [...expenseItems].sort((a, b) => {
+            // 정렬 적용 (지출일 내림차순 / 지출일 오름차순 / 지출금액(원화)순)
+            const sortedItems = [...filteredItems].sort((a, b) => {
                 const dateA = a.date || "2026-11-11";
                 const dateB = b.date || "2026-11-11";
 
-                if (sortBy === "date_asc") {
-                    return dateA.localeCompare(dateB) || (Number(a.id) - Number(b.id));
-                }
                 if (sortBy === "date_desc") {
                     return dateB.localeCompare(dateA) || (Number(b.id) - Number(a.id));
                 }
-                if (sortBy === "category") {
-                    return getCategoryOrder(a.category) - getCategoryOrder(b.category) || dateA.localeCompare(dateB);
+                if (sortBy === "date_asc") {
+                    return dateA.localeCompare(dateB) || (Number(a.id) - Number(b.id));
                 }
                 if (sortBy === "amount_desc") {
-                    return getConvertedKrwAmount(b) - getConvertedKrwAmount(a);
+                    return getConvertedKrwAmount(b) - getConvertedKrwAmount(a) || dateB.localeCompare(dateA);
                 }
                 return 0;
             });
@@ -890,6 +995,7 @@
                 const isKrw = item.currency === "KRW";
                 const currencySymbol = isKrw ? "￦" : "￥";
                 const itemDate = item.date || "2026-11-11";
+                const catStyle = getCategoryStyle(item.category);
                 const displayVal = isKrw 
                     ? `₩ ${Number(item.amount).toLocaleString()}` 
                     : `¥ ${Number(item.amount).toLocaleString()} <span class="text-[10px] text-sky-600 block">(${Math.round(item.amount * EXCHANGE_RATE).toLocaleString()}원)</span>`;
@@ -901,7 +1007,7 @@
                                 <span class="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md font-bold text-[11px]">
                                     ${itemDate}
                                 </span>
-                                <span class="${isKrw ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'} border px-2 py-0.5 rounded-md font-bold text-[11px]">
+                                <span class="${catStyle.badgeClass} border px-2 py-0.5 rounded-md font-bold text-[11px]">
                                     ${currencySymbol} | ${item.category}
                                 </span>
                             </div>
@@ -1006,14 +1112,14 @@
         }
 
         function openInfoEditModal() {
-            const config = daysConfig.find(d => d.dayIndex === currentSelectedDay);
+            const config = daysConfig.find(d => Number(d.dayIndex) === Number(currentSelectedDay));
             if (!config) return;
 
             document.getElementById('modalDayTitle').innerText = `${config.dayIndex}일차 (${config.dateLabel}) 소개 정보 수정`;
-            document.getElementById('editCityName').value = config.city;
-            document.getElementById('editSummary').value = config.summary;
-            document.getElementById('editFood').value = config.food;
-            document.getElementById('editActivity').value = config.activity;
+            document.getElementById('editCityName').value = config.city || "";
+            document.getElementById('editSummary').value = config.summary || "";
+            document.getElementById('editFood').value = config.food || "";
+            document.getElementById('editActivity').value = config.activity || "";
             document.getElementById('editExternalMap').value = config.externalMap || "";
 
             document.getElementById('infoEditModal').classList.remove('hidden');
@@ -1024,7 +1130,7 @@
         }
 
         function saveDayInfo() {
-            const config = daysConfig.find(d => d.dayIndex === currentSelectedDay);
+            const config = daysConfig.find(d => Number(d.dayIndex) === Number(currentSelectedDay));
             if (config) {
                 config.city = document.getElementById('editCityName').value;
                 config.summary = document.getElementById('editSummary').value;
