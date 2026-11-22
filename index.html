@@ -303,6 +303,26 @@
                 </div>
             </div>
 
+            <!-- 5개 카테고리 합계 & 전체 지출 대비 차지 비중 그래프 -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
+                <div class="flex justify-between items-center border-b pb-2 border-slate-100">
+                    <div>
+                        <h3 class="font-extrabold text-xs text-slate-900 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-chart-pie text-indigo-600 text-sm"></i>
+                            <span>5개 항목 지출 합계 및 비중</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">전체 지출(원화 환산 1엔=8.5원) 기준 항목별 점유율</p>
+                    </div>
+                    <span id="grandTotalKrwBadge" class="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-lg text-[11px] font-extrabold shrink-0">
+                        총 ₩0
+                    </span>
+                </div>
+
+                <div id="categoryBreakdownChart" class="space-y-3 text-xs">
+                    <!-- Dynamic 5-category bars -->
+                </div>
+            </div>
+
             <!-- Expense Form -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                 <h3 class="font-bold text-xs text-slate-800 mb-3 flex items-center space-x-2">
@@ -415,7 +435,15 @@
 
         const EXCHANGE_RATE = 8.50; // 1 JPY = 8.50 KRW
         const TARGET_KRW_BUDGET = 2500000; // 원화 목표: 250만 원
-        const TARGET_JPY_BUDGET = 200000; // 엔화 목표: 20만 엔
+        const TARGET_JPY_BUDGET = 200000;  // 엔화 목표: 20만 엔
+
+        const CATEGORIES = [
+            { name: "숙소/항공", color: "bg-blue-600", badge: "text-blue-700" },
+            { name: "교통/이동", color: "bg-sky-500", badge: "text-sky-700" },
+            { name: "식사/간식", color: "bg-amber-500", badge: "text-amber-700" },
+            { name: "관람/체험", color: "bg-purple-500", badge: "text-purple-700" },
+            { name: "쇼핑/기타", color: "bg-emerald-500", badge: "text-emerald-700" }
+        ];
 
         const defaultDaysConfig = [
             { dayIndex: 1, dateLabel: "11/11 (수)", fullDate: "11월 11일 (수)", city: "나고야 / 스와호", summary: "나고야 도착 후 스와호로 이동하는 라이딩 & 이동 코스입니다.", food: "나고야 테바사키(닭날개), 메밀소바", activity: "스와호 둘레길 드라이브, 야경 관람", externalMap: "https://maps.google.com/?q=Lake+Suwa" },
@@ -710,27 +738,42 @@
 
         function renderExpenseList() {
             const container = document.getElementById('expenseList');
+            const chartContainer = document.getElementById('categoryBreakdownChart');
 
             let krwTotal = 0, jpyTotal = 0;
             let krwCat = { "숙소/항공": 0, "교통/이동": 0, "기타": 0 };
             let jpyCat = { "식사/간식": 0, "관람/체험": 0, "쇼핑/기타": 0 };
 
+            // 5개 카테고리별 원화/엔화 합계 집계
+            let catSummary = {};
+            CATEGORIES.forEach(c => {
+                catSummary[c.name] = { krw: 0, jpy: 0, convertedKrw: 0 };
+            });
+
             expenseItems.forEach(item => {
                 const amt = Number(item.amount);
+                const catName = catSummary[item.category] ? item.category : "쇼핑/기타";
+
                 if (item.currency === "KRW") {
                     krwTotal += amt;
+                    catSummary[catName].krw += amt;
+                    catSummary[catName].convertedKrw += amt;
+
                     if (krwCat[item.category] !== undefined) krwCat[item.category] += amt;
                     else krwCat["기타"] += amt;
                 } else {
                     jpyTotal += amt;
+                    catSummary[catName].jpy += amt;
+                    catSummary[catName].convertedKrw += Math.round(amt * EXCHANGE_RATE);
+
                     if (jpyCat[item.category] !== undefined) jpyCat[item.category] += amt;
                     else jpyCat["쇼핑/기타"] += amt;
                 }
             });
 
             const jpyConvertedKrw = Math.round(jpyTotal * EXCHANGE_RATE);
-            
-            // 남은 예산 계산
+            const grandTotalKrw = krwTotal + jpyConvertedKrw;
+
             const krwRemaining = TARGET_KRW_BUDGET - krwTotal;
             const jpyRemaining = TARGET_JPY_BUDGET - jpyTotal;
 
@@ -760,6 +803,34 @@
             const jpyPercent = Math.min(Math.round((jpyTotal / TARGET_JPY_BUDGET) * 100), 100);
             document.getElementById('jpyBar').style.width = `${jpyPercent}%`;
             document.getElementById('jpyBarPercent').innerText = `${jpyPercent}%`;
+
+            // 5개 카테고리별 합계 및 전체 지출 비중 그래프 렌더링
+            document.getElementById('grandTotalKrwBadge').innerText = `총 ₩${grandTotalKrw.toLocaleString()}`;
+
+            chartContainer.innerHTML = CATEGORIES.map(cat => {
+                const data = catSummary[cat.name];
+                const sharePercent = grandTotalKrw > 0 ? Math.round((data.convertedKrw / grandTotalKrw) * 100) : 0;
+
+                let detailParts = [];
+                if (data.krw > 0) detailParts.push(`₩${data.krw.toLocaleString()}`);
+                if (data.jpy > 0) detailParts.push(`¥${data.jpy.toLocaleString()}`);
+                const amountLabel = detailParts.length > 0 ? detailParts.join(" + ") : "₩0";
+
+                return `
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-baseline">
+                            <span class="font-bold text-slate-800">${cat.name}</span>
+                            <div class="text-right">
+                                <span class="font-extrabold text-slate-900">${amountLabel}</span>
+                                <span class="font-extrabold ${cat.badge} ml-1.5">(${sharePercent}%)</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="${cat.color} h-2.5 rounded-full transition-all duration-500" style="width: ${sharePercent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             if (expenseItems.length === 0) {
                 container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">등록된 지출 내역이 없습니다.</p>`;
