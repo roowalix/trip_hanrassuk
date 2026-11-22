@@ -323,14 +323,19 @@
                 </div>
             </div>
 
-            <!-- Expense Form -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <h3 class="font-bold text-xs text-slate-800 mb-3 flex items-center space-x-2">
+            <!-- Expense Form (Add & Edit) -->
+            <div id="expenseFormBox" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <h3 id="expFormTitle" class="font-bold text-xs text-slate-800 mb-3 flex items-center space-x-2">
                     <i class="fa-solid fa-receipt text-emerald-600 text-sm"></i>
                     <span>지출 내역 등록</span>
                 </h3>
                 <form id="addExpenseForm" class="space-y-3 text-xs">
+                    <input type="hidden" id="editingExpenseId" value="">
                     <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-slate-600 font-bold block mb-1">지출일</label>
+                            <input type="date" id="expDate" value="2026-11-11" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-medium" required>
+                        </div>
                         <div>
                             <label class="text-slate-600 font-bold block mb-1">결제 화폐</label>
                             <select id="expCurrency" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-bold">
@@ -338,6 +343,8 @@
                                 <option value="JPY">엔화 (￥ JPY)</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-slate-600 font-bold block mb-1">카테고리</label>
                             <select id="expCategory" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-medium">
@@ -348,24 +355,37 @@
                                 <option value="쇼핑/기타">쇼핑/기타</option>
                             </select>
                         </div>
+                        <div>
+                            <label class="text-slate-600 font-bold block mb-1">금액</label>
+                            <input type="number" id="expAmount" placeholder="예: 150000 또는 3500" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-medium" required>
+                        </div>
                     </div>
                     <div>
-                        <label class="text-slate-600 font-bold block mb-1">금액</label>
-                        <input type="number" id="expAmount" placeholder="예: 150000 또는 3500" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-medium" required>
+                        <label class="text-slate-600 font-bold block mb-1">지출내역</label>
+                        <input type="text" id="expTitle" placeholder="예: 스와호 온천 호텔 또는 돈키호테 쇼핑" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-medium" required>
                     </div>
-                    <div>
-                        <label class="text-slate-600 font-bold block mb-1">지출 내역 메모</label>
-                        <input type="text" id="expTitle" placeholder="예: 항공권 결제 또는 스와호 온천 호텔" class="w-full p-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 font-medium" required>
+                    <div class="flex space-x-2 pt-1">
+                        <button type="submit" id="expSubmitBtn" class="flex-1 bg-emerald-600 active:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs transition">
+                            지출 추가하기
+                        </button>
+                        <button type="button" id="expCancelEditBtn" onclick="cancelExpenseEdit()" class="hidden bg-slate-200 active:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl font-bold transition">
+                            취소
+                        </button>
                     </div>
-                    <button type="submit" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs transition">
-                        지출 추가하기
-                    </button>
                 </form>
             </div>
 
-            <!-- Expense List -->
+            <!-- Expense List with Sorting -->
             <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <h3 class="font-extrabold text-xs text-slate-900 mb-3 border-b pb-2">전체 지출 내역</h3>
+                <div class="flex justify-between items-center mb-3 border-b pb-2.5 gap-2">
+                    <h3 class="font-extrabold text-xs text-slate-900 shrink-0">전체 지출 내역</h3>
+                    <select id="expSortBy" onchange="renderExpenseList()" class="text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="date_asc">지출일순 (오름차순)</option>
+                        <option value="date_desc">지출일순 (내림차순)</option>
+                        <option value="category">카테고리별</option>
+                        <option value="amount_desc">금액 높은순 (원화 환산)</option>
+                    </select>
+                </div>
                 <div id="expenseList" class="divide-y divide-slate-100">
                     <!-- Dynamic rendering -->
                 </div>
@@ -464,9 +484,9 @@
         ];
 
         const defaultExpenses = [
-            { id: 1, currency: "KRW", category: "숙소/항공", title: "인천-나고야 항공권 (사전결제)", amount: 790000 },
-            { id: 2, currency: "KRW", category: "교통/이동", title: "오토바이 2대 3일 렌트비", amount: 575960 },
-            { id: 3, currency: "KRW", category: "숙소/항공", title: "7박 숙소 전체 (예약 완료 + 잔여)", amount: 750000 }
+            { id: 1, date: "2026-11-11", currency: "KRW", category: "숙소/항공", title: "인천-나고야 항공권 (사전결제)", amount: 790000 },
+            { id: 2, date: "2026-11-11", currency: "KRW", category: "교통/이동", title: "오토바이 2대 3일 렌트비", amount: 575960 },
+            { id: 3, date: "2026-11-11", currency: "KRW", category: "숙소/항공", title: "7박 숙소 전체 (예약 완료 + 잔여)", amount: 750000 }
         ];
 
         let daysConfig = JSON.parse(localStorage.getItem('japan_days_config')) || defaultDaysConfig;
@@ -736,22 +756,32 @@
             });
         }
 
+        function getCategoryOrder(catName) {
+            const idx = CATEGORIES.findIndex(c => c.name === catName);
+            return idx === -1 ? 999 : idx;
+        }
+
+        function getConvertedKrwAmount(item) {
+            const amt = Number(item.amount) || 0;
+            return item.currency === "KRW" ? amt : Math.round(amt * EXCHANGE_RATE);
+        }
+
         function renderExpenseList() {
             const container = document.getElementById('expenseList');
             const chartContainer = document.getElementById('categoryBreakdownChart');
+            const sortBy = document.getElementById('expSortBy')?.value || "date_asc";
 
             let krwTotal = 0, jpyTotal = 0;
             let krwCat = { "숙소/항공": 0, "교통/이동": 0, "기타": 0 };
             let jpyCat = { "식사/간식": 0, "관람/체험": 0, "쇼핑/기타": 0 };
 
-            // 5개 카테고리별 원화/엔화 합계 집계
             let catSummary = {};
             CATEGORIES.forEach(c => {
                 catSummary[c.name] = { krw: 0, jpy: 0, convertedKrw: 0 };
             });
 
             expenseItems.forEach(item => {
-                const amt = Number(item.amount);
+                const amt = Number(item.amount) || 0;
                 const catName = catSummary[item.category] ? item.category : "쇼핑/기타";
 
                 if (item.currency === "KRW") {
@@ -837,9 +867,29 @@
                 return;
             }
 
-            container.innerHTML = expenseItems.map(item => {
+            const sortedItems = [...expenseItems].sort((a, b) => {
+                const dateA = a.date || "2026-11-11";
+                const dateB = b.date || "2026-11-11";
+
+                if (sortBy === "date_asc") {
+                    return dateA.localeCompare(dateB) || (Number(a.id) - Number(b.id));
+                }
+                if (sortBy === "date_desc") {
+                    return dateB.localeCompare(dateA) || (Number(b.id) - Number(a.id));
+                }
+                if (sortBy === "category") {
+                    return getCategoryOrder(a.category) - getCategoryOrder(b.category) || dateA.localeCompare(dateB);
+                }
+                if (sortBy === "amount_desc") {
+                    return getConvertedKrwAmount(b) - getConvertedKrwAmount(a);
+                }
+                return 0;
+            });
+
+            container.innerHTML = sortedItems.map(item => {
                 const isKrw = item.currency === "KRW";
                 const currencySymbol = isKrw ? "￦" : "￥";
+                const itemDate = item.date || "2026-11-11";
                 const displayVal = isKrw 
                     ? `₩ ${Number(item.amount).toLocaleString()}` 
                     : `¥ ${Number(item.amount).toLocaleString()} <span class="text-[10px] text-sky-600 block">(${Math.round(item.amount * EXCHANGE_RATE).toLocaleString()}원)</span>`;
@@ -847,8 +897,11 @@
                 return `
                     <div class="py-3 flex justify-between items-center text-xs">
                         <div class="space-y-1 pr-2">
-                            <div>
-                                <span class="${isKrw ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'} border px-2 py-0.5 rounded-md font-bold text-[11px] inline-block">
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <span class="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md font-bold text-[11px]">
+                                    ${itemDate}
+                                </span>
+                                <span class="${isKrw ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'} border px-2 py-0.5 rounded-md font-bold text-[11px]">
                                     ${currencySymbol} | ${item.category}
                                 </span>
                             </div>
@@ -856,11 +909,14 @@
                                 ${item.title}
                             </div>
                         </div>
-                        <div class="flex items-center space-x-3 shrink-0">
+                        <div class="flex items-center space-x-2 shrink-0">
                             <div class="text-right font-extrabold text-slate-900 text-sm">
                                 ${displayVal}
                             </div>
-                            <button onclick="deleteExpense(${item.id})" class="text-slate-300 hover:text-rose-500 p-1 transition">
+                            <button onclick="editExpenseItem(${item.id})" class="text-slate-400 hover:text-sky-600 p-1 transition" title="수정">
+                                <i class="fa-solid fa-pen-to-square text-sm"></i>
+                            </button>
+                            <button onclick="deleteExpense(${item.id})" class="text-slate-300 hover:text-rose-500 p-1 transition" title="삭제">
                                 <i class="fa-solid fa-xmark text-sm"></i>
                             </button>
                         </div>
@@ -869,8 +925,40 @@
             }).join('');
         }
 
+        function editExpenseItem(id) {
+            const item = expenseItems.find(i => Number(i.id) === Number(id));
+            if (!item) return;
+
+            document.getElementById('editingExpenseId').value = item.id;
+            document.getElementById('expDate').value = item.date || "2026-11-11";
+            document.getElementById('expCurrency').value = item.currency || "KRW";
+            document.getElementById('expCategory').value = item.category || "쇼핑/기타";
+            document.getElementById('expAmount').value = item.amount;
+            document.getElementById('expTitle').value = item.title;
+
+            document.getElementById('expFormTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-sky-600 text-sm"></i><span>지출 내역 수정</span>`;
+            document.getElementById('expSubmitBtn').innerText = "수정 완료";
+            document.getElementById('expCancelEditBtn').classList.remove('hidden');
+
+            const formBox = document.getElementById('expenseFormBox');
+            formBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelExpenseEdit() {
+            document.getElementById('addExpenseForm').reset();
+            document.getElementById('editingExpenseId').value = "";
+            document.getElementById('expDate').value = "2026-11-11";
+            document.getElementById('expFormTitle').innerHTML = `<i class="fa-solid fa-receipt text-emerald-600 text-sm"></i><span>지출 내역 등록</span>`;
+            document.getElementById('expSubmitBtn').innerText = "지출 추가하기";
+            document.getElementById('expCancelEditBtn').classList.add('hidden');
+        }
+
         function deleteExpense(id) {
+            const editingId = document.getElementById('editingExpenseId').value;
             db.collection("trip_expenses").doc(String(id)).delete().then(() => {
+                if (editingId && Number(editingId) === Number(id)) {
+                    cancelExpenseEdit();
+                }
                 showToast("지출 내역이 삭제되었습니다.");
             });
         }
@@ -900,17 +988,19 @@
 
             document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+                const editingId = document.getElementById('editingExpenseId').value;
+                const date = document.getElementById('expDate').value || "2026-11-11";
                 const currency = document.getElementById('expCurrency').value;
                 const category = document.getElementById('expCategory').value;
                 const title = document.getElementById('expTitle').value;
                 const amount = Number(document.getElementById('expAmount').value);
 
-                const id = Date.now();
-                const expData = { id, currency, category, title, amount };
+                const id = editingId ? Number(editingId) : Date.now();
+                const expData = { id, date, currency, category, title, amount };
 
                 db.collection("trip_expenses").doc(String(id)).set(expData).then(() => {
-                    showToast("지출 내역이 등록되었습니다.");
-                    this.reset();
+                    showToast(editingId ? "지출 내역이 수정되었습니다." : "지출 내역이 등록되었습니다.");
+                    cancelExpenseEdit();
                 });
             });
         }
